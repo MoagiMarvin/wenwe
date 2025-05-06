@@ -18,7 +18,7 @@ class LocationPickerMap extends StatefulWidget {
 
 class _LocationPickerMapState extends State<LocationPickerMap> {
   late GoogleMapController _mapController;
-  LatLng _selectedLocation = const LatLng(0.3476, 32.5825); // Default to Kampala
+  LatLng? _selectedLocation;
   bool _isLoading = true;
 
   @override
@@ -45,10 +45,10 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       // Otherwise, get the current location
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Location services are not enabled
+        // Show a dialog to enable location services
+        _showLocationServicesDisabledDialog();
         setState(() {
           _isLoading = false;
-          _selectedLocation = const LatLng(0.3476, 32.5825); // Default fallback
         });
         return;
       }
@@ -57,20 +57,20 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          // Permissions are denied
+          // Show a dialog that permissions are denied
+          _showPermissionDeniedDialog();
           setState(() {
             _isLoading = false;
-            _selectedLocation = const LatLng(0.3476, 32.5825); // Default fallback
           });
           return;
         }
       }
       
       if (permission == LocationPermission.deniedForever) {
-        // Permissions are permanently denied
+        // Show a dialog that permissions are permanently denied
+        _showPermissionPermanentlyDeniedDialog();
         setState(() {
           _isLoading = false;
-          _selectedLocation = const LatLng(0.3476, 32.5825); // Default fallback
         });
         return;
       }
@@ -82,12 +82,92 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
         _isLoading = false;
       });
     } catch (e) {
-      // If there's an error, use a default location
+      // Show error dialog
+      _showErrorDialog(e.toString());
       setState(() {
         _isLoading = false;
-        _selectedLocation = const LatLng(0.3476, 32.5825); // Default fallback
       });
     }
+  }
+
+  void _showLocationServicesDisabledDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Location Services Disabled'),
+          content: const Text('Please enable location services to use this feature.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Location Permission Denied'),
+          content: const Text('Please grant location permission to use this feature.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPermissionPermanentlyDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Location Permission Permanently Denied'),
+          content: const Text('Please enable location permission in app settings to use this feature.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error Getting Location'),
+          content: Text('An error occurred: $error'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -96,58 +176,76 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : Stack(
-            children: [
-              GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: _selectedLocation,
-                  zoom: 14.0,
-                ),
-                onMapCreated: _onMapCreated,
-                onTap: (LatLng location) {
-                  setState(() {
-                    _selectedLocation = location;
-                    widget.onLocationSelected(location);
-                  });
-                },
-                markers: {
-                  Marker(
-                    markerId: const MarkerId('selectedLocation'),
-                    position: _selectedLocation,
-                    draggable: true,
-                    onDragEnd: (newPosition) {
-                      setState(() {
-                        _selectedLocation = newPosition;
-                        widget.onLocationSelected(newPosition);
-                      });
-                    },
-                  ),
-                },
-                myLocationEnabled: true,
-                myLocationButtonEnabled: true,
-                zoomControlsEnabled: true,
-                mapToolbarEnabled: true,
-              ),
-              Positioned(
-                bottom: 10,
-                left: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    'Coordinates: ${_selectedLocation.latitude.toStringAsFixed(6)}, ${_selectedLocation.longitude.toStringAsFixed(6)}',
-                    style: const TextStyle(fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          );
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (_selectedLocation == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Location services are required to use this feature.'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _initializeLocation,
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: _selectedLocation!,
+            zoom: 14.0,
+          ),
+          onMapCreated: _onMapCreated,
+          onTap: (LatLng location) {
+            setState(() {
+              _selectedLocation = location;
+              widget.onLocationSelected(location);
+            });
+          },
+          markers: {
+            Marker(
+              markerId: const MarkerId('selectedLocation'),
+              position: _selectedLocation!,
+              draggable: true,
+              onDragEnd: (newPosition) {
+                setState(() {
+                  _selectedLocation = newPosition;
+                  widget.onLocationSelected(newPosition);
+                });
+              },
+            ),
+          },
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
+          zoomControlsEnabled: true,
+          mapToolbarEnabled: true,
+        ),
+        Positioned(
+          bottom: 10,
+          left: 10,
+          right: 10,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              'Coordinates: ${_selectedLocation!.latitude.toStringAsFixed(6)}, ${_selectedLocation!.longitude.toStringAsFixed(6)}',
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
