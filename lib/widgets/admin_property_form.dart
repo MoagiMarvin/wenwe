@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bnb/widgets/location_picker_map.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -117,8 +118,20 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
   LatLng _selectedLocation = const LatLng(0, 0);
   
   void _showMapDialog() {
-    // Default location (you can set this to a default city or location)
-    _selectedLocation = const LatLng(0.3476, 32.5825); // Default to Kampala, Uganda
+    // Parse existing coordinates if available
+    LatLng? initialLocation;
+    if (_coordinatesController.text.isNotEmpty) {
+      try {
+        List<String> parts = _coordinatesController.text.split(',');
+        if (parts.length == 2) {
+          double lat = double.parse(parts[0].trim());
+          double lng = double.parse(parts[1].trim());
+          initialLocation = LatLng(lat, lng);
+        }
+      } catch (e) {
+        // If parsing fails, initialLocation remains null
+      }
+    }
     
     showDialog(
       context: context,
@@ -133,37 +146,12 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                 Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: _selectedLocation,
-                        zoom: 14.0,
-                      ),
-                      onTap: (LatLng location) {
+                    child: LocationPickerMap(
+                      initialLocation: initialLocation,
+                      onLocationSelected: (LatLng location) {
                         _selectedLocation = location;
                       },
-                      markers: {
-                        Marker(
-                          markerId: const MarkerId('selectedLocation'),
-                          position: _selectedLocation,
-                          draggable: true,
-                          onDragEnd: (newPosition) {
-                            _selectedLocation = newPosition;
-                          },
-                        ),
-                      },
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
-                      zoomControlsEnabled: true,
-                      mapToolbarEnabled: true,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Coordinates: ${_selectedLocation.latitude.toStringAsFixed(6)}, ${_selectedLocation.longitude.toStringAsFixed(6)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -279,7 +267,6 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                     
                     const SizedBox(height: 15),
                     
-                    // After the location field in your build method
                     _buildTextField(
                       controller: _locationController,
                       label: 'Location',
