@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class PropertyListItem extends StatelessWidget {
   final Map<String, dynamic> property;
   final VoidCallback onDelete;
+  final VoidCallback onEdit; // Add this line
 
   const PropertyListItem({
-    super.key,
+    Key? key,
     required this.property,
     required this.onDelete,
-  });
+    required this.onEdit, // Add this line
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,140 +22,129 @@ class PropertyListItem extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
             blurRadius: 5,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Property image
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(15),
-              bottomLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
             ),
             child: Image.network(
               property['imageUrl'],
-              width: 100,
-              height: 100,
+              height: 150,
+              width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  width: 100,
-                  height: 100,
+                  height: 150,
                   color: Colors.grey[300],
-                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                  ),
                 );
               },
             ),
           ),
           
           // Property details
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    property['title'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3142),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        property['location'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(property['status']).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          property['status'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _getStatusColor(property['status']),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4F6CAD).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          property['type'],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4F6CAD),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Price and actions
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(15),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  property['price'],
+                  property['title'],
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF4F6CAD),
+                    color: Color(0xFF2D3142),
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 5),
                 Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.grey),
-                      onPressed: () {
-                        // Edit functionality would go here
-                      },
-                      iconSize: 20,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    const SizedBox(width: 5),
+                    Text(
+                      property['location'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                    const SizedBox(width: 15),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      property['price'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4F6CAD),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(property['status']),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        property['status'],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Edit button
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Color(0xFF4F6CAD)),
+                      onPressed: onEdit,
+                    ),
+                    // Delete button
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: onDelete,
-                      iconSize: 20,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        // Show confirmation dialog
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Property'),
+                            content: const Text('Are you sure you want to delete this property?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  onDelete();
+                                },
+                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

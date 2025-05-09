@@ -1,18 +1,75 @@
 import 'dart:io';
-import 'package:bnb/widgets/location_picker_map.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+class LocationPickerMap extends StatefulWidget {
+  final LatLng initialLocation;
+  final Function(LatLng) onLocationSelected;
+
+  const LocationPickerMap({
+    Key? key,
+    required this.initialLocation,
+    required this.onLocationSelected,
+  }) : super(key: key);
+
+  @override
+  State<LocationPickerMap> createState() => _LocationPickerMapState();
+}
+
+class _LocationPickerMapState extends State<LocationPickerMap> {
+  late LatLng _selectedLocation;
+  late GoogleMapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLocation = widget.initialLocation;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(
+        target: widget.initialLocation,
+        zoom: 14,
+      ),
+      markers: {
+        Marker(
+          markerId: const MarkerId('selected_location'),
+          position: _selectedLocation,
+          draggable: true,
+          onDragEnd: (newPosition) {
+            setState(() {
+              _selectedLocation = newPosition;
+              widget.onLocationSelected(newPosition);
+            });
+          },
+        ),
+      },
+      onTap: (location) {
+        setState(() {
+          _selectedLocation = location;
+          widget.onLocationSelected(location);
+        });
+      },
+      onMapCreated: (controller) {
+        _mapController = controller;
+      },
+    );
+  }
+}
 
 class AdminPropertyForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
+  final Map<String, dynamic>? initialProperty; // Add this line
 
   const AdminPropertyForm({
-    super.key,
+    Key? key,
     required this.onSubmit,
-  });
+    this.initialProperty, // Add this line
+  }) : super(key: key);
 
   @override
   State<AdminPropertyForm> createState() => _AdminPropertyFormState();
@@ -20,38 +77,153 @@ class AdminPropertyForm extends StatefulWidget {
 
 class _AdminPropertyFormState extends State<AdminPropertyForm> {
   final _formKey = GlobalKey<FormState>();
-  
-  // Existing controllers
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _imageUrlController = TextEditingController();
-  
-  // Add coordinates controller
-  final TextEditingController _coordinatesController = TextEditingController();
-  
-  // Add variables for both web and mobile
-  File? _imageFile;
-  Uint8List? _webImage;
-  final ImagePicker _picker = ImagePicker();
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _coordinatesController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _imageUrlController = TextEditingController();
+  final List<TextEditingController> _rulesControllers = [TextEditingController()];
   
   String _selectedType = 'Apartment';
-  String _selectedStatus = 'Available';
+  // Change this line
+  String _selectedStatus = 'Available Now';  // Changed from 'Available' to 'Available Now'
+  String _selectedDuration = 'Long-term'; // Add this line
+  
+  final ImagePicker _picker = ImagePicker();
+  File? _imageFile;
+  Uint8List? _webImage;
+  
+  // Multiple images support
+  List<dynamic> _selectedImages = [];
+  final int _maxImages = 5;
+  
+  // Default location (can be set to a specific city)
+  final LatLng _defaultLocation = const LatLng(-26.2041, 28.0473); // Johannesburg
+  late LatLng _selectedLocation;
+  
+  // Amenities list
+  final List<Map<String, dynamic>> _amenities = [
+    {'name': 'WiFi', 'icon': Icons.wifi, 'selected': false},
+    {'name': 'Parking', 'icon': Icons.local_parking, 'selected': false},
+    {'name': 'Kitchen', 'icon': Icons.kitchen, 'selected': false},
+    {'name': 'TV', 'icon': Icons.tv, 'selected': false},
+    {'name': 'AC', 'icon': Icons.ac_unit, 'selected': false},
+    {'name': 'Washing Machine', 'icon': Icons.local_laundry_service, 'selected': false},
+    {'name': 'Security', 'icon': Icons.security, 'selected': false},
+    {'name': 'Pool', 'icon': Icons.pool, 'selected': false},
+    {'name': 'Gym', 'icon': Icons.fitness_center, 'selected': false},
+  ];
   
   final List<String> _propertyTypes = [
     'Apartment',
     'House',
-    'Single',
-    'Sharing',
-    'Bachelor',
+    'Single Room',
+    'Shared Room',
+    'Studio',
   ];
   
   final List<String> _statusOptions = [
-    'Available',
+    'Available Now',
+    'Available from Date',
     'Pending',
     'Rented',
   ];
+  
+  // Add this new list
+  final List<String> _durationOptions = [
+    'Long-term',
+    'Short-term',
+    'Both',
+  ];
+  
+  // Add this
+  DateTime? _availableFromDate;
+  final _availableDateController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLocation = _defaultLocation;
+    
+    // Initialize form with existing property data if available
+    if (widget.initialProperty != null) {
+      final property = widget.initialProperty!;
+      _titleController.text = property['title'] ?? '';
+      _locationController.text = property['location'] ?? '';
+      _priceController.text = property['price'] ?? '';
+      _descriptionController.text = property['description'] ?? '';
+      
+      if (property['coordinates'] != null) {
+        _coordinatesController.text = property['coordinates'];
+        
+        // Parse coordinates if available
+        try {
+          final parts = property['coordinates'].split(',');
+          if (parts.length == 2) {
+            final lat = double.parse(parts[0].trim());
+            final lng = double.parse(parts[1].trim());
+            _selectedLocation = LatLng(lat, lng);
+          }
+        } catch (e) {
+          // Use default location if parsing fails
+        }
+      }
+      
+      if (property['type'] != null && _propertyTypes.contains(property['type'])) {
+        _selectedType = property['type'];
+      }
+      
+      if (property['status'] != null && _statusOptions.contains(property['status'])) {
+        _selectedStatus = property['status'];
+      }
+      
+      // Add this block to handle available from date
+      if (property['availableFromDate'] != null) {
+        _availableDateController.text = property['availableFromDate'];
+        try {
+          final parts = property['availableFromDate'].split('/');
+          if (parts.length == 3) {
+            final day = int.parse(parts[0]);
+            final month = int.parse(parts[1]);
+            final year = int.parse(parts[2]);
+            _availableFromDate = DateTime(year, month, day);
+          }
+        } catch (e) {
+          // Use default date if parsing fails
+        }
+      }
+      
+      // Handle amenities if available
+      if (property['amenities'] != null && property['amenities'] is List) {
+        final amenities = property['amenities'] as List;
+        for (var amenity in _amenities) {
+          if (amenities.contains(amenity['name'])) {
+            amenity['selected'] = true;
+          }
+        }
+      }
+      
+      // Handle rules if available
+      if (property['rules'] != null && property['rules'] is List) {
+        final rules = property['rules'] as List;
+        _rulesControllers.clear();
+        
+        if (rules.isEmpty) {
+          _rulesControllers.add(TextEditingController());
+        } else {
+          for (var rule in rules) {
+            _rulesControllers.add(TextEditingController(text: rule.toString()));
+          }
+        }
+      }
+      
+      // Handle image URL if available
+      if (property['imageUrl'] != null) {
+        _imageUrlController.text = property['imageUrl'];
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -60,82 +232,223 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
     _priceController.dispose();
     _descriptionController.dispose();
     _imageUrlController.dispose();
+    for (var controller in _rulesControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  // Add method to pick image from gallery
+  // Add this method here
+  Future<void> _selectAvailableDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _availableFromDate ?? DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    
+    if (picked != null && picked != _availableFromDate) {
+      setState(() {
+        _availableFromDate = picked;
+        // Format date with leading zeros for day and month
+        _availableDateController.text = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
+      });
+    }
+  }
+
   Future<void> _pickImage() async {
+    if (_selectedImages.length >= _maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Maximum $_maxImages images allowed')),
+      );
+      return;
+    }
+  
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     
     if (pickedFile != null) {
-      setState(() {
-        if (kIsWeb) {
-          // Handle web platform
-          pickedFile.readAsBytes().then((value) {
-            setState(() {
-              _webImage = value;
-              _imageFile = null;
-              _imageUrlController.clear();
-            });
+      if (kIsWeb) {
+        // Handle web platform
+        pickedFile.readAsBytes().then((value) {
+          setState(() {
+            _selectedImages.add({'type': 'web', 'data': value});
           });
-        } else {
-          // Handle mobile platform
-          _imageFile = File(pickedFile.path);
-          _webImage = null;
-          _imageUrlController.clear();
-        }
-      });
+        });
+      } else {
+        // Handle mobile platform
+        setState(() {
+          _selectedImages.add({'type': 'file', 'data': File(pickedFile.path)});
+        });
+      }
     }
   }
 
-  // Add method to take a photo with camera
   Future<void> _takePhoto() async {
+    if (_selectedImages.length >= _maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Maximum $_maxImages images allowed')),
+      );
+      return;
+    }
+  
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
     
     if (pickedFile != null) {
-      setState(() {
-        if (kIsWeb) {
-          // Handle web platform
-          pickedFile.readAsBytes().then((value) {
-            setState(() {
-              _webImage = value;
-              _imageFile = null;
-              _imageUrlController.clear();
-            });
+      if (kIsWeb) {
+        // Handle web platform
+        pickedFile.readAsBytes().then((value) {
+          setState(() {
+            _selectedImages.add({'type': 'web', 'data': value});
           });
-        } else {
-          // Handle mobile platform
-          _imageFile = File(pickedFile.path);
-          _webImage = null;
-          _imageUrlController.clear();
-        }
-      });
+        });
+      } else {
+        // Handle mobile platform
+        setState(() {
+          _selectedImages.add({'type': 'file', 'data': File(pickedFile.path)});
+        });
+      }
     }
   }
 
-  // Add method to show map dialog
-  // Add a variable to store the selected location
-  LatLng _selectedLocation = const LatLng(0, 0);
-  
-  void _showMapDialog() {
-    // Parse existing coordinates if available
-    LatLng? initialLocation;
-    if (_coordinatesController.text.isNotEmpty) {
-      try {
-        List<String> parts = _coordinatesController.text.split(',');
-        if (parts.length == 2) {
-          double lat = double.parse(parts[0].trim());
-          double lng = double.parse(parts[1].trim());
-          initialLocation = LatLng(lat, lng);
-        }
-      } catch (e) {
-        // If parsing fails, initialLocation remains null
-      }
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    IconData? suffixIcon,
+    Function()? onSuffixIconPressed,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF2D3142),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(15),
+            suffixIcon: suffixIcon != null
+                ? IconButton(
+                    icon: Icon(suffixIcon, color: const Color(0xFF4F6CAD)),
+                    onPressed: onSuffixIconPressed,
+                  )
+                : null,
+          ),
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePreviews() {
+    if (_selectedImages.isEmpty) {
+      return const SizedBox.shrink();
     }
-    
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Image Previews',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF2D3142),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _selectedImages.length,
+            itemBuilder: (context, index) {
+              final image = _selectedImages[index];
+              Widget imageWidget;
+              
+              if (image['type'] == 'web') {
+                imageWidget = Image.memory(
+                  image['data'],
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                );
+              } else {
+                imageWidget = Image.file(
+                  image['data'],
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                );
+              }
+              
+              return Container(
+                margin: const EdgeInsets.only(right: 10),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: imageWidget,
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () => _removeImage(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${_selectedImages.length}/$_maxImages images selected',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMapDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
+        LatLng initialLocation = _selectedLocation;
+        
         return AlertDialog(
           title: const Text('Select Location'),
           content: SizedBox(
@@ -192,18 +505,39 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      // Get selected amenities
+      List<String> selectedAmenities = _amenities
+          .where((amenity) => amenity['selected'] as bool)
+          .map((amenity) => amenity['name'] as String)
+          .toList();
+      
+      // Get rules
+      List<String> rules = _rulesControllers
+          .map((controller) => controller.text)
+          .where((rule) => rule.isNotEmpty)
+          .toList();
+      
       final Map<String, dynamic> formData = {
         'title': _titleController.text,
         'location': _locationController.text,
-        'coordinates': _coordinatesController.text,  // Add coordinates to form data
+        'coordinates': _coordinatesController.text,
         'price': _priceController.text,
         'description': _descriptionController.text,
         'type': _selectedType,
         'status': _selectedStatus,
+        'duration': _selectedDuration, // Add this line
+        // Add this conditional
+        'availableFromDate': _selectedStatus == 'Available from Date' ? _availableDateController.text : null,
+        'amenities': selectedAmenities,
+        'rules': rules,
       };
 
-      // Handle image data based on platform and what's available
-      if (_webImage != null) {
+      // Handle image data
+      if (_selectedImages.isNotEmpty) {
+        // For simplicity in this example, we'll just use the first image for the imageUrl
+        // In a real app, you'd handle multiple images differently
+        formData['imageUrl'] = 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2';
+      } else if (_webImage != null) {
         formData['imageBytes'] = _webImage;
       } else if (_imageFile != null) {
         formData['imageFile'] = _imageFile;
@@ -219,6 +553,8 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.initialProperty != null;
+    
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -226,13 +562,13 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Form header
+            // Form header - update title based on whether we're editing or adding
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Add New Property',
-                  style: TextStyle(
+                Text(
+                  isEditing ? 'Edit Property' : 'Add New Property',
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D3142),
@@ -248,7 +584,7 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
             const SizedBox(height: 20),
             
             // Form fields
-            Expanded(
+            Flexible(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,12 +629,13 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                           ),
                         ),
                       ),
+                    
                     const SizedBox(height: 15),
                     
                     _buildTextField(
                       controller: _priceController,
                       label: 'Price',
-                      hint: r'e.g. $1200/month',  // Using raw string with 'r' prefix
+                      hint: r'e.g. R1200/month',
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a price';
@@ -306,6 +643,88 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                         return null;
                       },
                     ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Add Duration Dropdown here
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Duration',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF2D3142),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedDuration,
+                              isExpanded: true,
+                              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
+                              items: _durationOptions.map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                setState(() {
+                                  _selectedDuration = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Conditional fields based on duration
+                    if (_selectedDuration == 'Long-term' || _selectedDuration == 'Both')
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Long-term Options',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF2D3142),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Add long-term specific fields here
+                          // For example: lease duration, security deposit, etc.
+                        ],
+                      ),
+                    
+                    if (_selectedDuration == 'Short-term' || _selectedDuration == 'Both')
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Short-term Options',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF2D3142),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Add short-term specific fields here
+                          // For example: minimum stay, cleaning fee, etc.
+                        ],
+                      ),
                     
                     const SizedBox(height: 15),
                     
@@ -329,11 +748,11 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                         child: DropdownButton<String>(
                           value: _selectedType,
                           isExpanded: true,
-                          hint: const Text('Select property type'),
-                          items: _propertyTypes.map((String type) {
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
+                          items: _propertyTypes.map((String value) {
                             return DropdownMenuItem<String>(
-                              value: type,
-                              child: Text(type),
+                              value: value,
+                              child: Text(value),
                             );
                           }).toList(),
                           onChanged: (String? newValue) {
@@ -349,7 +768,7 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                     
                     const SizedBox(height: 15),
                     
-                    // Status dropdown
+                    // Property status dropdown
                     const Text(
                       'Status',
                       style: TextStyle(
@@ -369,7 +788,7 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                         child: DropdownButton<String>(
                           value: _selectedStatus,
                           isExpanded: true,
-                          hint: const Text('Select status'),
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
                           items: _statusOptions.map((String status) {
                             return DropdownMenuItem<String>(
                               value: status,
@@ -380,6 +799,11 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                             if (newValue != null) {
                               setState(() {
                                 _selectedStatus = newValue;
+                                // Clear date if not "Available from Date"
+                                if (newValue != 'Available from Date') {
+                                  _availableDateController.clear();
+                                  _availableFromDate = null;
+                                }
                               });
                             }
                           },
@@ -387,117 +811,255 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                       ),
                     ),
                     
-                    const SizedBox(height: 15),
-                    
-                    // Replace the image URL field with image selection options
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Property Image',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF2D3142),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
+                    // Show date picker if "Available from Date" is selected
+                    if (_selectedStatus == 'Available from Date')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 15),
+                        child: Row(
                           children: [
                             Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _pickImage,
-                                icon: const Icon(Icons.photo_library),
-                                label: const Text('Gallery'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[200],
-                                  foregroundColor: Colors.black87,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: TextFormField(
+                                controller: _availableDateController,
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  hintText: 'Select availability date',
+                                  filled: true,
+                                  fillColor: Colors.grey[100],
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.all(15),
                                 ),
+                                validator: (value) {
+                                  if (_selectedStatus == 'Available from Date' && 
+                                      (value == null || value.isEmpty)) {
+                                    return 'Please select a date';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _takePhoto,
-                                icon: const Icon(Icons.camera_alt),
-                                label: const Text('Camera'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[200],
-                                  foregroundColor: Colors.black87,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
+                            IconButton(
+                              icon: const Icon(Icons.calendar_today, color: Color(0xFF4F6CAD)),
+                              onPressed: _selectAvailableDate,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 15),
-                        const Text(
-                          'OR',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
+                      ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    _buildTextField(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      hint: 'Describe your property...',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a description';
+                        }
+                        return null;
+                      },
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Amenities section
+                    const Text(
+                      'Amenities',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF2D3142),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _amenities.map((amenity) {
+                        return FilterChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                amenity['icon'] as IconData,
+                                size: 16,
+                                color: amenity['selected'] as bool
+                                    ? Colors.white
+                                    : const Color(0xFF4F6CAD),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                amenity['name'] as String,
+                                style: TextStyle(
+                                  color: amenity['selected'] as bool
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
+                          selected: amenity['selected'] as bool,
+                          selectedColor: const Color(0xFF4F6CAD),
+                          backgroundColor: Colors.grey[100],
+                          checkmarkColor: Colors.white,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              amenity['selected'] = selected;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Rules section
+                    const Text(
+                      'House Rules',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF2D3142),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: [
+                        for (int i = 0; i < _rulesControllers.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _rulesControllers[i],
+                                    decoration: InputDecoration(
+                                      hintText: 'e.g. No smoking',
+                                      filled: true,
+                                      fillColor: Colors.grey[100],
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding: const EdgeInsets.all(15),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (i == _rulesControllers.length - 1)
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle, color: Color(0xFF4F6CAD)),
+                                    onPressed: () {
+                                      setState(() {
+                                        _rulesControllers.add(TextEditingController());
+                                      });
+                                    },
+                                  )
+                                else
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _rulesControllers.removeAt(i);
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 15),
+                    
+                    // Image upload section
+                    const Text(
+                      'Property Images',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF2D3142),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Gallery'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F6CAD),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 15),
-                        _buildTextField(
-                          controller: _imageUrlController,
-                          label: 'Image URL (Optional)',
-                          hint: 'Enter image URL or leave blank for default',
-                          validator: null,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _takePhoto,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Camera'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F6CAD),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     
+                    const SizedBox(height: 10),
+                    
+                    // Image URL input
+                    _buildTextField(
+                      controller: _imageUrlController,
+                      label: 'Image URL (optional)',
+                      hint: 'e.g. https://example.com/image.jpg',
+                      validator: null,
+                    ),
+                    
+                    const SizedBox(height: 10),
+                    
+                    // Image previews
+                    _buildImagePreviews(),
+                    
                     const SizedBox(height: 20),
                     
-                    // Image preview - show either file or URL
-                    if (_webImage != null || _imageFile != null || _imageUrlController.text.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Image Preview',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF2D3142),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
+                    // Submit button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F6CAD),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
-                            child: _buildImagePreview(),
                           ),
-                        ],
+                        ),
+                        child: Text(
+                          isEditing ? 'Update Property' : 'Add Property',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
+                    ),
                   ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Submit button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F6CAD),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Add Property',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
               ),
             ),
@@ -505,92 +1067,5 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
         ),
       ),
     );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-    IconData? suffixIcon,
-    VoidCallback? onSuffixIconPressed,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF2D3142),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 15,
-              vertical: 15,
-            ),
-            suffixIcon: suffixIcon != null
-                ? IconButton(
-                    icon: Icon(suffixIcon),
-                    onPressed: onSuffixIconPressed,
-                  )
-                : null,
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  // Replace the image preview section with this:
-  Widget _buildImagePreview() {
-    if (_webImage != null) {
-      return Image.memory(
-        _webImage!,
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    } else if (_imageFile != null) {
-      return Image.file(
-        _imageFile!,
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    } else if (_imageUrlController.text.isNotEmpty) {
-      return Image.network(
-        _imageUrlController.text,
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 150,
-            width: double.infinity,
-            color: Colors.grey[300],
-            child: const Center(
-              child: Text('Invalid image URL'),
-            ),
-          );
-        },
-      );
-    }
-    return Container();
   }
 }

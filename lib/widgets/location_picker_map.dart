@@ -20,6 +20,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
   late GoogleMapController _mapController;
   LatLng? _selectedLocation;
   bool _isLoading = true;
+  MapType _currentMapType = MapType.satellite; // Set default to satellite view
 
   @override
   void initState() {
@@ -174,6 +175,15 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
     _mapController = controller;
   }
 
+  // Add a method to toggle between map types
+  void _onMapTypeButtonPressed() {
+    setState(() {
+      _currentMapType = _currentMapType == MapType.normal
+          ? MapType.satellite
+          : MapType.normal;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -203,6 +213,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
             target: _selectedLocation!,
             zoom: 14.0,
           ),
+          mapType: _currentMapType, // Set the map type
           onMapCreated: _onMapCreated,
           onTap: (LatLng location) {
             setState(() {
@@ -227,6 +238,22 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
           myLocationButtonEnabled: true,
           zoomControlsEnabled: true,
           mapToolbarEnabled: true,
+        ),
+        // Add a button to toggle between normal and satellite view
+        Positioned(
+          top: 16,
+          right: 16,
+          child: FloatingActionButton(
+            mini: true,
+            backgroundColor: Colors.white,
+            onPressed: _onMapTypeButtonPressed,
+            materialTapTargetSize: MaterialTapTargetSize.padded,
+            child: Icon(
+              Icons.map,
+              size: 20.0,
+              color: _currentMapType == MapType.normal ? Colors.blue : Colors.green,
+            ),
+          ),
         ),
         Positioned(
           bottom: 10,

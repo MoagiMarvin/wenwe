@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/property_list_item.dart';
 import '../widgets/admin_property_form.dart';
 
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -16,7 +17,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'id': '1',
       'title': 'Modern Studio Apartment',
       'location': 'Downtown',
-      'price': '\$1200/month',
+      'price': 'R1200/month',  
       'type': 'Apartment',
       'status': 'Available',
       'imageUrl': 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267',
@@ -25,7 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'id': '2',
       'title': 'Luxury Apartment with View',
       'location': 'City Center',
-      'price': '\$1800/month',
+      'price': 'R1800/month', 
       'type': 'Apartment',
       'status': 'Available',
       'imageUrl': 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2',
@@ -34,7 +35,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'id': '3',
       'title': 'Cozy Single Room',
       'location': 'University Area',
-      'price': '\$800/month',
+      'price': 'R800/month',  
       'type': 'Single',
       'status': 'Pending',
       'imageUrl': 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85',
@@ -84,6 +85,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
         child: AdminPropertyForm(onSubmit: _addNewProperty),
+      ),
+    );
+  }
+
+  void _editProperty(Map<String, dynamic> property) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
+        child: AdminPropertyForm(
+          onSubmit: (updatedProperty) => _updateProperty(property['id'], updatedProperty),
+          initialProperty: property, // Pass the existing property data
+        ),
+      ),
+    );
+  }
+
+  void _updateProperty(String id, Map<String, dynamic> updatedProperty) {
+    setState(() {
+      final index = _properties.indexWhere((property) => property['id'] == id);
+      if (index != -1) {
+        _properties[index] = {
+          'id': id,
+          ...updatedProperty,
+        };
+      }
+    });
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Property updated successfully!'),
+        backgroundColor: Color(0xFF4F6CAD),
       ),
     );
   }
@@ -217,6 +259,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       return PropertyListItem(
                         property: property,
                         onDelete: () => _deleteProperty(property['id']),
+                        onEdit: () => _editProperty(property), // Add this line
                       );
                     },
                   ),
