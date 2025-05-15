@@ -115,13 +115,27 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
     {'name': 'Gym', 'icon': Icons.fitness_center, 'selected': false},
   ];
   
-  final List<String> _propertyTypes = [
+  final List<String> _longTermPropertyTypes = [
     'Apartment',
     'House',
     'Single Room',
     'Shared Room',
-    'Studio',
+    'Bachelor',
   ];
+  
+  final List<String> _shortTermPropertyTypes = [
+    'House',
+    'Shared Room',
+    'Single Room',
+    'Bachelor',
+    'Villa',
+    'Lodge',
+    'Resort',
+    'Hotel',
+  ];
+  
+  // This will hold the current property types based on selected duration
+  List<String> _propertyTypes = [];
   
   final List<String> _statusOptions = [
     'Available Now',
@@ -145,6 +159,11 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
   void initState() {
     super.initState();
     _selectedLocation = _defaultLocation;
+    
+    // Initialize property types based on selected duration
+    _propertyTypes = _selectedDuration == 'Long-term' 
+        ? _longTermPropertyTypes 
+        : _shortTermPropertyTypes;
     
     // Initialize form with existing property data if available
     if (widget.initialProperty != null) {
@@ -503,6 +522,31 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
     );
   }
 
+  void _updatePropertyTypes(String duration) {
+    setState(() {
+      _selectedDuration = duration;
+      // Update property types based on selected duration
+      if (duration == 'Short-term') {
+        _propertyTypes = _shortTermPropertyTypes;
+      } else if (duration == 'Long-term') {
+        _propertyTypes = _longTermPropertyTypes;
+      } else { // Both
+        _propertyTypes = [..._longTermPropertyTypes];
+        // Add short-term types that aren't already in the list
+        for (var type in _shortTermPropertyTypes) {
+          if (!_propertyTypes.contains(type)) {
+            _propertyTypes.add(type);
+          }
+        }
+      }
+      
+      // If current selected type is not in the new list, reset it
+      if (!_propertyTypes.contains(_selectedType)) {
+        _selectedType = _propertyTypes[0];
+      }
+    });
+  }
+
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       // Get selected amenities
@@ -669,6 +713,7 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                             child: DropdownButton<String>(
                               value: _selectedDuration,
                               isExpanded: true,
+                              hint: const Text('Select Duration'),
                               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
                               items: _durationOptions.map((String value) {
                                 return DropdownMenuItem<String>(
@@ -677,9 +722,9 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                                 );
                               }).toList(),
                               onChanged: (newValue) {
-                                setState(() {
-                                  _selectedDuration = newValue!;
-                                });
+                                if (newValue != null) {
+                                  _updatePropertyTypes(newValue);
+                                }
                               },
                             ),
                           ),
@@ -728,42 +773,48 @@ class _AdminPropertyFormState extends State<AdminPropertyForm> {
                     
                     const SizedBox(height: 15),
                     
-                    // Property type dropdown
-                    const Text(
-                      'Property Type',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF2D3142),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedType,
-                          isExpanded: true,
-                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
-                          items: _propertyTypes.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                _selectedType = newValue;
-                              });
-                            }
-                          },
+                    // Property type dropdown - now uses the dynamic _propertyTypes list
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Property Type',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF2D3142),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedType,
+                              isExpanded: true,
+                              hint: const Text('Select Type'),
+                              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4F6CAD)),
+                              items: _propertyTypes.map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              onChanged: (newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedType = newValue;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     
                     const SizedBox(height: 15),
