@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/property_list_item.dart';
-import '../widgets/admin_property_form.dart';
+// Replace the old form import with the new form factory
+// import '../widgets/admin_property_form.dart';
+import '../widgets/forms/form_factory.dart';
+
 
 
 class AdminDashboard extends StatefulWidget {
@@ -48,11 +51,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _addNewProperty(Map<String, dynamic> property) {
     setState(() {
       _properties.add({
-        'id': (_properties.length + 1).toString(),
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
         ...property,
+        // Make sure venueType is included if not already in the property data
+        'venueType': property['venueType'] ?? 'accommodation',
       });
     });
-    Navigator.pop(context);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Property added successfully!'),
@@ -74,20 +79,77 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _showAddPropertyForm() {
-    showModalBottomSheet(
+    String selectedFormType = 'accommodation';
+    final List<String> formTypes = [
+      'accommodation',
+      'dining',
+    ];
+    
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(20),
+          child: StatefulBuilder(
+            builder: (context, setStateDialog) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Dialog title
+                const Text(
+                  'Add New Property',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3142),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Dropdown for selecting form type
+                DropdownButton<String>(
+                  value: selectedFormType,
+                  onChanged: (String? newValue) {
+                    setStateDialog(() {
+                      selectedFormType = newValue!;
+                    });
+                  },
+                  items: formTypes.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value[0].toUpperCase() + value.substring(1)),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                // Form based on selected type
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: FormFactory.createForm(
+                      formType: selectedFormType,
+                      onSubmit: (data) {
+                        _addNewProperty(data);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Cancel button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: AdminPropertyForm(onSubmit: _addNewProperty),
       ),
     );
   }
@@ -106,9 +168,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             topRight: Radius.circular(25),
           ),
         ),
-        child: AdminPropertyForm(
-          onSubmit: (updatedProperty) => _updateProperty(property['id'], updatedProperty),
-          initialProperty: property, // Pass the existing property data
+        child: FormFactory.createForm(
+          formType: 'accommodation',
+          onSubmit: (data) => _updateProperty(property['id'], data),
+          initialData: property,
         ),
       ),
     );
@@ -118,9 +181,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
     setState(() {
       final index = _properties.indexWhere((property) => property['id'] == id);
       if (index != -1) {
+        // Preserve the venueType if it's not in the updated data
+        final venueType = updatedProperty['venueType'] ?? _properties[index]['venueType'] ?? 'accommodation';
+        
         _properties[index] = {
           'id': id,
           ...updatedProperty,
+          'venueType': venueType,
         };
       }
     });
@@ -185,13 +252,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ],
       ),
-      floatingActionButton: _selectedIndex == 0 
-          ? FloatingActionButton(
-              onPressed: _showAddPropertyForm,
-              backgroundColor: const Color(0xFF4F6CAD),
-              child: const Icon(Icons.add),
-            )
-          : null, // Only show FAB on dashboard tab
     );
   }
   

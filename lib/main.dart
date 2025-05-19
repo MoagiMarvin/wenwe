@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'screens/accommodation_search_screen.dart';
 import 'screens/admin_dashboard.dart';
+import 'screens/reservation_form_screen.dart';
 
 void main() {
+  // Initialize Google Maps
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const AccommodationApp());
 }
 
@@ -17,6 +20,16 @@ class AccommodationApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4F6CAD),
+          primary: const Color(0xFF4F6CAD),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF4F6CAD),
+            foregroundColor: Colors.white,
+          ),
+        ),
       ),
       home: const LandingPage(),
     );
@@ -53,18 +66,30 @@ class LandingPage extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4F6CAD),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
-              child: const Text(
-                'Find Accommodation',
-                style: TextStyle(fontSize: 16),
-              ),
+              child: const Text('Find Accommodation'),
             ),
             const SizedBox(height: 20),
-            OutlinedButton(
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReservationFormScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F6CAD),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+              child: const Text('Make Reservation'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -73,20 +98,12 @@ class LandingPage extends StatelessWidget {
                   ),
                 );
               },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF4F6CAD)),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F6CAD),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
-              child: const Text(
-                'Landlord Login',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF4F6CAD),
-                ),
-              ),
+              child: const Text('Admin Dashboard'),
             ),
           ],
         ),

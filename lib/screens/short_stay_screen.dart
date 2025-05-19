@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'long_stay_screen.dart';
-import 'short_stay_screen.dart';
-import 'restaurant_list_screen.dart';
-import '../widgets/category_button.dart';
 import '../widgets/accommodation_card.dart';
+import '../widgets/category_button.dart';
+import 'long_stay_screen.dart';
+import 'restaurant_list_screen.dart';
 
-class AccommodationSearchScreen extends StatefulWidget {
-  const AccommodationSearchScreen({super.key});
+class ShortStayScreen extends StatefulWidget {
+  const ShortStayScreen({super.key});
 
   @override
-  State<AccommodationSearchScreen> createState() => _AccommodationSearchScreenState();
+  State<ShortStayScreen> createState() => _ShortStayScreenState();
 }
 
-class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
+class _ShortStayScreenState extends State<ShortStayScreen> {
   // Options for dropdown
   final List<String> _options = ['Long Stay', 'Short Stay', 'Restaurants'];
-  String _selectedOption = 'Long Stay'; // Default selection
+  String _selectedOption = 'Short Stay'; // Default for this screen
   
   @override
   Widget build(BuildContext context) {
@@ -48,10 +47,10 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                     ),
                     Expanded(
                       child: TextField(
-                        decoration: InputDecoration(
-                          hintText: _getSearchHint(),
+                        decoration: const InputDecoration(
+                          hintText: 'Search...',
                           border: InputBorder.none,
-                          hintStyle: const TextStyle(color: Colors.grey),
+                          hintStyle: TextStyle(color: Colors.grey),
                         ),
                       ),
                     ),
@@ -73,15 +72,15 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                           });
                           
                           // Navigate based on selection
-                          if (newValue == 'Short Stay') {
-                            Navigator.push(
+                          if (newValue == 'Long Stay') {
+                            Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const ShortStayScreen(),
+                                builder: (context) => const LongStayScreen(),
                               ),
                             );
                           } else if (newValue == 'Restaurants') {
-                            Navigator.push(
+                            Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const RestaurantListScreen(),
@@ -108,10 +107,11 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    CategoryButton(label: "Single"),
-                    CategoryButton(label: "Sharing"),
-                    CategoryButton(label: "House"),
-                    CategoryButton(label: "Apartment"),
+                    CategoryButton(label: "Resort"),
+                    CategoryButton(label: "Hotel"),
+                    CategoryButton(label: "Motel"),
+                    CategoryButton(label: "Cottage"),
+                    CategoryButton(label: "Villa"),
                   ],
                 ),
               ),
@@ -123,30 +123,30 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
                 child: ListView(
                   children: const [
                     AccommodationCard(
-                      title: "Modern Studio Apartment",
-                      rating: 4.5,
-                      location: "Downtown",
-                      availability: "Available Immediately",
-                      price: "\$1200/month",
-                      imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267",
+                      title: "Beachfront Resort",
+                      rating: 4.9,
+                      location: "Coastal Area",
+                      availability: "Available for booking",
+                      price: "\$150/night",
+                      imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945",
                     ),
                     SizedBox(height: 15),
                     AccommodationCard(
-                      title: "Luxury Apartment with View",
-                      rating: 4.8,
+                      title: "Mountain View Villa",
+                      rating: 4.7,
+                      location: "Highland Resort",
+                      availability: "Available next weekend",
+                      price: "\$200/night",
+                      imageUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811",
+                    ),
+                    SizedBox(height: 15),
+                    AccommodationCard(
+                      title: "Luxury Hotel Suite",
+                      rating: 4.6,
                       location: "City Center",
-                      availability: "Available from June 1",
-                      price: "\$1800/month",
-                      imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-                    ),
-                    SizedBox(height: 15),
-                    AccommodationCard(
-                      title: "Cozy 2-Bedroom House",
-                      rating: 4.3,
-                      location: "Suburban Area",
-                      availability: "Available from July 15",
-                      price: "\$1500/month",
-                      imageUrl: "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+                      availability: "Available this week",
+                      price: "\$180/night",
+                      imageUrl: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461",
                     ),
                   ],
                 ),
@@ -175,19 +175,5 @@ class _AccommodationSearchScreenState extends State<AccommodationSearchScreen> {
         ],
       ),
     );
-  }
-  
-  // Helper method to get search hint based on selected option
-  String _getSearchHint() {
-    switch (_selectedOption) {
-      case 'Long Stay':
-        return 'Search long-term accommodations...';
-      case 'Short Stay':
-        return 'Search resorts and short stays...';
-      case 'Restaurants':
-        return 'Search restaurants...';
-      default:
-        return 'Search...';
-    }
   }
 }
