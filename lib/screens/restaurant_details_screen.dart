@@ -11,6 +11,34 @@ class RestaurantDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sample menu images - in a real app, these would come from the restaurantData
+    final List<Map<String, dynamic>> menuItems = [
+      {
+        'name': 'Signature Pasta',
+        'price': '\$15.99',
+        'imageUrl': 'https://images.unsplash.com/photo-1551183053-bf91a1d81141',
+        'description': 'Homemade pasta with rich tomato sauce and fresh basil'
+      },
+      {
+        'name': 'Grilled Salmon',
+        'price': '\$22.99',
+        'imageUrl': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2',
+        'description': 'Fresh salmon fillet with lemon butter sauce and seasonal vegetables'
+      },
+      {
+        'name': 'Chocolate Dessert',
+        'price': '\$8.99',
+        'imageUrl': 'https://images.unsplash.com/photo-1563805042-7684c019e1cb',
+        'description': 'Decadent chocolate cake with vanilla ice cream'
+      },
+      {
+        'name': 'Fresh Salad',
+        'price': '\$12.99',
+        'imageUrl': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
+        'description': 'Mixed greens with seasonal vegetables and house dressing'
+      },
+    ];
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -174,6 +202,118 @@ class RestaurantDetailsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  
+                  const Divider(height: 32),
+                  
+                  // Menu Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Menu Highlights',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // View full menu action
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Full menu coming soon!')),
+                          );
+                        },
+                        child: const Text('View Full Menu'),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Menu Images Carousel
+                  SizedBox(
+                    height: 220,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: menuItems.length,
+                      itemBuilder: (context, index) {
+                        final item = menuItems[index];
+                        return Container(
+                          width: 200,
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Dish Image
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  topRight: Radius.circular(12),
+                                ),
+                                child: Image.network(
+                                  item['imageUrl'],
+                                  height: 120,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item['name'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Text(
+                                          item['price'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF4F6CAD),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item['description'],
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   
                   const Divider(height: 32),
                   

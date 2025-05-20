@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/category_button.dart';
 import 'accommodation_search_screen.dart';
 import 'short_stay_screen.dart';
+import 'restaurant_details_screen.dart';
+import 'reservation_form_screen.dart';
 
 class RestaurantListScreen extends StatefulWidget {
   const RestaurantListScreen({super.key});
@@ -122,27 +124,42 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                 child: ListView(
                   children: [
                     _buildRestaurantCard(
+                      context: context,
                       name: "Bella Italia",
                       cuisine: "Italian",
                       rating: 4.7,
                       priceRange: "\$\$",
                       imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5",
+                      description: "Authentic Italian cuisine with a modern twist. Our pasta is made fresh daily.",
+                      address: "123 Main St, Anytown",
+                      operatingHours: "11:00 AM - 10:00 PM",
+                      phone: "+1 234 567 8901",
                     ),
                     const SizedBox(height: 15),
                     _buildRestaurantCard(
+                      context: context,
                       name: "Spice Garden",
                       cuisine: "Indian",
                       rating: 4.5,
                       priceRange: "\$\$",
                       imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
+                      description: "Experience the rich flavors of authentic Indian cuisine in a cozy atmosphere.",
+                      address: "456 Oak Ave, Anytown",
+                      operatingHours: "12:00 PM - 10:00 PM",
+                      phone: "+1 234 567 8902",
                     ),
                     const SizedBox(height: 15),
                     _buildRestaurantCard(
+                      context: context,
                       name: "Golden Dragon",
                       cuisine: "Chinese",
                       rating: 4.3,
                       priceRange: "\$\$\$",
                       imageUrl: "https://images.unsplash.com/photo-1552566626-52f8b828add9",
+                      description: "Traditional Chinese dishes prepared by master chefs using authentic recipes.",
+                      address: "789 Elm St, Anytown",
+                      operatingHours: "11:30 AM - 9:30 PM",
+                      phone: "+1 234 567 8903",
                     ),
                   ],
                 ),
@@ -174,12 +191,34 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
   }
   
   Widget _buildRestaurantCard({
+    required BuildContext context,
     required String name,
     required String cuisine,
     required double rating,
     required String priceRange,
     required String imageUrl,
+    required String description,
+    required String address,
+    required String operatingHours,
+    required String phone,
   }) {
+    // Create restaurant data map to pass to details screen
+    final Map<String, dynamic> restaurantData = {
+      'name': name,
+      'cuisineType': cuisine,
+      'rating': rating,
+      'imageUrl': imageUrl,
+      'description': description,
+      'address': address,
+      'operatingHours': operatingHours,
+      'phone': phone,
+      'reservationsAccepted': true,
+      'takeoutAvailable': true,
+      'deliveryAvailable': cuisine != 'Fine Dining',
+      'alcoholServed': true,
+      'seatingCapacity': 50,
+    };
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -269,6 +308,59 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 15),
+                
+                // Action buttons
+                Row(
+                  children: [
+                    // View Details Button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RestaurantDetailsScreen(
+                                restaurantData: restaurantData,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F6CAD),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('View'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Reserve Button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ReservationFormScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Reserve'),
                       ),
                     ),
                   ],
