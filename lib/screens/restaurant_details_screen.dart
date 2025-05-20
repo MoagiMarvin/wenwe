@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bnb/screens/reservation_form_screen.dart';
+import 'package:bnb/screens/full_menu_screen.dart';
 
 class RestaurantDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> restaurantData;
@@ -218,9 +219,14 @@ class RestaurantDetailsScreen extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          // View full menu action
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Full menu coming soon!')),
+                          // Navigate to full menu screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FullMenuScreen(
+                                restaurantName: restaurantData['name'] ?? 'Restaurant',
+                              ),
+                            ),
                           );
                         },
                         child: const Text('View Full Menu'),
