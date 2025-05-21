@@ -9,6 +9,7 @@ class FormFields {
     bool isRequired = true,
     int maxLines = 1,
     String? Function(String?)? validator,
+    IconData? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,13 +26,22 @@ class FormFields {
           controller: controller,
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            filled: true,
+            fillColor: Colors.grey[100],
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
+              horizontal: 16,
+              vertical: 16,
             ),
+            suffixIcon: suffixIcon != null ? Icon(suffixIcon) : null,
           ),
           keyboardType: keyboardType,
           maxLines: maxLines,
@@ -70,14 +80,19 @@ class FormFields {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
+            border: Border.all(color: Colors.grey[300]!),
             borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[100],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
+              icon: const Icon(Icons.arrow_drop_down),
+              iconSize: 24,
+              elevation: 16,
+              style: const TextStyle(color: Colors.black87, fontSize: 16),
               items: items.map((T item) {
                 return DropdownMenuItem<T>(
                   value: item,
@@ -186,6 +201,59 @@ class FormFields {
                   return null;
                 }
               : null,
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+  
+  // Add a new method for image upload
+  static Widget buildImageUpload({
+    required String label,
+    required Function() onTap,
+    String? imagePath,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: imagePath != null && imagePath.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      imagePath,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey[400]),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Upload Image',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+          ),
         ),
         const SizedBox(height: 16),
       ],

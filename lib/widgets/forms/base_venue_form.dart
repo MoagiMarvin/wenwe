@@ -9,10 +9,10 @@ abstract class BaseVenueForm extends StatefulWidget {
   final Map<String, dynamic>? initialData;
 
   const BaseVenueForm({
-    Key? key,
+    super.key,
     required this.onSubmit,
     this.initialData,
-  }) : super(key: key);
+  });
 }
 
 abstract class BaseVenueFormState<T extends BaseVenueForm> extends State<T> {

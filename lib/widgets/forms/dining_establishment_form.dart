@@ -17,11 +17,21 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
   final TextEditingController _seatingCapacityController = TextEditingController();
   final TextEditingController _cuisineTypeController = TextEditingController();
   final TextEditingController _operatingHoursController = TextEditingController();
+  final TextEditingController _contactNumberController = TextEditingController(); // Added contact number controller
   bool _reservationsAccepted = false;
   bool _takeoutAvailable = false;
   bool _deliveryAvailable = false;
   bool _alcoholServed = false;
-
+  
+  // New controllers for menu items
+  final List<Map<String, dynamic>> _menuItems = [];
+  final TextEditingController _menuItemNameController = TextEditingController();
+  final TextEditingController _menuItemPriceController = TextEditingController();
+  final TextEditingController _menuItemDescriptionController = TextEditingController();
+  String? _menuItemImageUrl;
+  
+  // Menu image URL
+  String? _menuImageUrl;
   
   final List<String> _diningTypes = [
     'Restaurant',
@@ -42,10 +52,19 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
       _seatingCapacityController.text = data['seatingCapacity'] ?? '';
       _cuisineTypeController.text = data['cuisineType'] ?? '';
       _operatingHoursController.text = data['operatingHours'] ?? '';
+      _contactNumberController.text = data['contactNumber'] ?? ''; // Initialize contact number
       _reservationsAccepted = data['reservationsAccepted'] ?? false;
       _takeoutAvailable = data['takeoutAvailable'] ?? false;
       _deliveryAvailable = data['deliveryAvailable'] ?? false;
       _alcoholServed = data['alcoholServed'] ?? false;
+      
+      // Initialize menu items if available
+      if (data['menuItems'] != null) {
+        _menuItems.addAll(List<Map<String, dynamic>>.from(data['menuItems']));
+      }
+      
+      // Initialize menu image if available
+      _menuImageUrl = data['menuImageUrl'];
     }
   }
 
@@ -54,6 +73,10 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
     _seatingCapacityController.dispose();
     _cuisineTypeController.dispose();
     _operatingHoursController.dispose();
+    _contactNumberController.dispose(); // Dispose contact number controller
+    _menuItemNameController.dispose();
+    _menuItemPriceController.dispose();
+    _menuItemDescriptionController.dispose();
     super.dispose();
   }
 
@@ -63,11 +86,84 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
     formData['seatingCapacity'] = _seatingCapacityController.text;
     formData['cuisineType'] = _cuisineTypeController.text;
     formData['operatingHours'] = _operatingHoursController.text;
+    formData['contactNumber'] = _contactNumberController.text; // Add contact number to form data
     formData['reservationsAccepted'] = _reservationsAccepted;
     formData['takeoutAvailable'] = _takeoutAvailable;
     formData['deliveryAvailable'] = _deliveryAvailable;
     formData['alcoholServed'] = _alcoholServed;
     formData['venueType'] = 'dining';
+    formData['menuItems'] = _menuItems;
+    formData['menuImageUrl'] = _menuImageUrl;
+    // Note: status field is removed
+  }
+  
+  void _addMenuItem() {
+    if (_menuItemNameController.text.isNotEmpty && 
+        _menuItemPriceController.text.isNotEmpty && 
+        _menuItemImageUrl != null) {
+      setState(() {
+        // Check if we've reached the maximum number of menu items (5)
+        if (_menuItems.length < 5) {
+          _menuItems.add({
+            'name': _menuItemNameController.text,
+            'price': _menuItemPriceController.text,
+            'imageUrl': _menuItemImageUrl,
+            'description': _menuItemDescriptionController.text,
+          });
+          
+          // Clear the controllers
+          _menuItemNameController.clear();
+          _menuItemPriceController.clear();
+          _menuItemDescriptionController.clear();
+          _menuItemImageUrl = null;
+        } else {
+          // Show a snackbar or alert that maximum items reached
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Maximum of 5 menu items allowed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
+    } else {
+      // Show validation error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in name, price, and add an image'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  void _removeMenuItem(int index) {
+    setState(() {
+      _menuItems.removeAt(index);
+    });
+  }
+  
+  // Mock method to simulate image selection
+  // In a real app, you would use image_picker package
+  void _selectImage(bool isMenuItem) {
+    // Simulate selecting an image and getting a URL
+    final String mockImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+    
+    setState(() {
+      if (isMenuItem) {
+        _menuItemImageUrl = mockImageUrl;
+      } else {
+        _menuImageUrl = mockImageUrl;
+      }
+    });
+    
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Image selected successfully'),
+        backgroundColor: Color(0xFF4F6CAD),
+      ),
+    );
   }
 
   @override
@@ -277,6 +373,307 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
               controlAffinity: ListTileControlAffinity.leading,
               activeColor: const Color(0xFF4F6CAD),
             ),
+          ],
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Menu Image Section
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Menu Image',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3142),
+              ),
+            ),
+            const SizedBox(height: 10),
+            
+            // Display selected menu image or upload button
+            Container(
+              width: double.infinity,
+              height: 150,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: _menuImageUrl != null
+                  ? Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _menuImageUrl!,
+                            width: double.infinity,
+                            height: 150,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 5,
+                          right: 5,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _menuImageUrl = null;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : InkWell(
+                      onTap: () => _selectImage(false),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate, size: 40, color: Color(0xFF4F6CAD)),
+                            SizedBox(height: 8),
+                            Text('Add Menu Image', style: TextStyle(color: Color(0xFF4F6CAD))),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Menu Items Section
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Menu Items (Max 5)',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3142),
+              ),
+            ),
+            const SizedBox(height: 10),
+            
+            // Display existing menu items
+            if (_menuItems.isNotEmpty) ...[
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _menuItems.length,
+                itemBuilder: (context, index) {
+                  final item = _menuItems[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: Image.network(
+                          item['imageUrl'],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      title: Text(item['name']),
+                      subtitle: Text('${item['price']}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _removeMenuItem(index),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 15),
+            ],
+            
+            // Add new menu item form
+            if (_menuItems.length < 5) ...[
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Add Menu Item',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF2D3142),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    // Item Name
+                    TextFormField(
+                      controller: _menuItemNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Item Name',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Item Price
+                    TextFormField(
+                      controller: _menuItemPriceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Price',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        prefixText: 'R ',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Item Description
+                    TextFormField(
+                      controller: _menuItemDescriptionController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Description (Optional)',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    // Item Image
+                    Container(
+                      width: double.infinity,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: _menuItemImageUrl != null
+                          ? Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    _menuItemImageUrl!,
+                                    width: double.infinity,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _menuItemImageUrl = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.close, size: 20),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : InkWell(
+                              onTap: () => _selectImage(true),
+                              child: const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate, size: 30, color: Color(0xFF4F6CAD)),
+                                    SizedBox(height: 5),
+                                    Text('Add Item Image', style: TextStyle(color: Color(0xFF4F6CAD))),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 15),
+                    
+                    // Add Item Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _addMenuItem,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4F6CAD),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Add Menu Item',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              // Show message when max items reached
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.amber),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Maximum of 5 menu items reached. Remove an item to add a new one.',
+                        style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ],

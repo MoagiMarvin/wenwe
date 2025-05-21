@@ -87,12 +87,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
     
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => Dialog(
+        insetPadding: EdgeInsets.only(
+          top: MediaQuery.of(context).size.height * 0.13, // Start 13% from the top
+          left: 0,
+          right: 0,
+          bottom: 0,
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(0),
+            bottomRight: Radius.circular(0),
+          ),
         ),
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height * 0.87, // 87% of screen height
           padding: const EdgeInsets.all(20),
           child: StatefulBuilder(
             builder: (context, setStateDialog) => Column(
