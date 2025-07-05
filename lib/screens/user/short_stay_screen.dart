@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/accommodation_card.dart';
-import '../widgets/category_button.dart';
+import '../../widgets/accommodation_card.dart';
+import '../../widgets/category_button.dart';
 import 'long_stay_screen.dart';
 import 'restaurant_list_screen.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/accommodation_card.dart';
-import '../widgets/category_button.dart';
+import '../../widgets/accommodation_card.dart';
+import '../../widgets/category_button.dart';
 
 class LongStayScreen extends StatefulWidget {
   const LongStayScreen({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/category_button.dart';
+import '../../widgets/category_button.dart';
 import 'accommodation_search_screen.dart';
 import 'short_stay_screen.dart';
 import 'restaurant_details_screen.dart';

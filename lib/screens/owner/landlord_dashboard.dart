@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/property_list_item.dart';
+import '../../widgets/property_list_item.dart';
 // Replace the old form import with the new form factory
-// import '../widgets/admin_property_form.dart';
-import '../widgets/forms/form_factory.dart';
+// import '../../widgets/admin_property_form.dart';
+import '../../widgets/forms/form_factory.dart';
 
 
 

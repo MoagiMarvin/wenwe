@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/feature_grid.dart';
-import '../widgets/feature_item.dart';
-import '../widgets/review_item.dart';
-import '../widgets/rule_item.dart';
+import '../../widgets/feature_grid.dart';
+import '../../widgets/feature_item.dart';
+import '../../widgets/review_item.dart';
+import '../../widgets/rule_item.dart';
 
 class AccommodationDetailsPage extends StatefulWidget {
   final String title;
