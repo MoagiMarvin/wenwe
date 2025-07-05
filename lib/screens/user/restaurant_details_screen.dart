@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:bnb/screens/reservation_form_screen.dart';
-import 'package:bnb/screens/full_menu_screen.dart';
+import 'package:bnb/screens/user/reservation_form_screen.dart';
+import 'package:bnb/screens/user/full_menu_screen.dart';
 
 class RestaurantDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> restaurantData;

@@ -69,7 +69,7 @@ class Amenities {
   static const List<Map<String, dynamic>> accessibilityAmenities = [
     {'id': 'step_free_access', 'name': 'Step-free Access', 'icon': Icons.accessible},
     {'id': 'wide_doorway', 'name': 'Wide Doorway', 'icon': Icons.door_sliding},
-    {'id': 'wide_hallway', 'name': 'Wide Hallway', 'icon': Icons.door_front},
+
     {'id': 'accessible_bathroom', 'name': 'Accessible Bathroom', 'icon': Icons.accessible_forward},
     {'id': 'elevator', 'name': 'Elevator', 'icon': Icons.elevator},
   ];

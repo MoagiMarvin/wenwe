@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'screens/accommodation_search_screen.dart';
-import 'screens/admin_dashboard.dart';
-import 'screens/reservation_form_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/user/accommodation_search_screen.dart';
+import 'screens/owner/landlord_dashboard.dart';
+import 'screens/user/reservation_form_screen.dart';
 
-void main() {
-  // Initialize Google Maps
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: 'YOUR_SUPABASE_URL',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+  );
   runApp(const AccommodationApp());
 }
 
@@ -94,7 +98,7 @@ class LandingPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AdminDashboard(),
+                    builder: (context) => const LandlordDashboard(),
                   ),
                 );
               },
@@ -103,7 +107,7 @@ class LandingPage extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
-              child: const Text('Admin Dashboard'),
+              child: const Text('Landlord Dashboard'),
             ),
           ],
         ),

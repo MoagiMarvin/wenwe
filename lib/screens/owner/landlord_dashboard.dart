@@ -6,14 +6,14 @@ import '../widgets/forms/form_factory.dart';
 
 
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+class LandlordDashboard extends StatefulWidget {
+  const LandlordDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  State<LandlordDashboard> createState() => _LandlordDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _LandlordDashboardState extends State<LandlordDashboard> {
   // Add a variable to track the selected tab
   int _selectedIndex = 0;
   
