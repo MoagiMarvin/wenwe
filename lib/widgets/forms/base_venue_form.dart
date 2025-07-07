@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../common/location_picker_map.dart';
+import '../../screens/owner/owner_home_page.dart'; // For LocationPickerDialog
 import '../common/image_picker_widget.dart';
 import '../common/form_fields.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 abstract class BaseVenueForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
@@ -122,64 +124,19 @@ abstract class BaseVenueFormState<T extends BaseVenueForm> extends State<T> {
     super.dispose();
   }
 
-  void showMapDialog() {
-    showDialog(
+  void showMapDialog() async {
+    final LatLng initial = selectedLocation;
+    final LatLng? picked = await showDialog<LatLng>(
       context: context,
-      builder: (context) {
-        LatLng initialLocation = selectedLocation;
-        
-        return AlertDialog(
-          title: const Text('Select Location'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: Column(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LocationPickerMap(
-                      initialLocation: initialLocation,
-                      onLocationSelected: (LatLng location) {
-                        selectedLocation = location;
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Tap on the map to select a location or drag the marker',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  coordinatesController.text = 
-                      '${selectedLocation.latitude.toStringAsFixed(6)}, ${selectedLocation.longitude.toStringAsFixed(6)}';
-                });
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F6CAD),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => LocationPickerDialog(initialLocation: initial),
     );
+    if (picked != null) {
+      setState(() {
+        selectedLocation = picked;
+        coordinatesController.text =
+            '${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}';
+      });
+    }
   }
 
   void addRuleField() {
@@ -415,9 +372,14 @@ abstract class BaseVenueFormState<T extends BaseVenueForm> extends State<T> {
         ImagePickerWidget(
           selectedImages: selectedImages,
           maxImages: maxImages,
-          onImagesSelected: (images) {
+          onImagesSelected: (imgs) {
             setState(() {
-              selectedImages = images;
+              selectedImages = imgs.map((img) {
+                if (img is String) return img;
+                if (img is XFile) return img.path;
+                if (img is File) return img.path;
+                return img.toString();
+              }).toList();
             });
           },
         ),
@@ -495,5 +457,13 @@ abstract class BaseVenueFormState<T extends BaseVenueForm> extends State<T> {
         ),
       ),
     );
+  }
+}
+
+Widget buildImage(String img) {
+  if (img.startsWith('http')) {
+    return Image.network(img);
+  } else {
+    return Image.file(File(img));
   }
 }

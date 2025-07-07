@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/user/accommodation_details_page.dart';
+import 'package:bnb/models/compound.dart';
 
 class AccommodationCard extends StatelessWidget {
   final String title;
