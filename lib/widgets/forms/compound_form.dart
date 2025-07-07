@@ -25,7 +25,6 @@ class _CompoundFormState extends State<CompoundForm> {
   List<String> _tags = [];
   double? _latitude;
   double? _longitude;
-  String _landmark = '';
   List<dynamic> _images = [];
 
   // Example options for dropdowns and chips
@@ -42,9 +41,6 @@ class _CompoundFormState extends State<CompoundForm> {
   ];
   final List<String> _amenityOptions = [
     'WiFi', 'Parking', 'Security', 'Pool', 'Laundry', 'Gym', 'Other'
-  ];
-  final List<String> _landmarkSuggestions = [
-    'University of Limpopo', 'Mall of the North', 'Polokwane CBD', 'Other'
   ];
 
   // Add a TextEditingController for tag input
@@ -73,8 +69,7 @@ class _CompoundFormState extends State<CompoundForm> {
         _longitude != null &&
         _images.isNotEmpty &&
         _province.isNotEmpty &&
-        _amenities.isNotEmpty &&
-        _landmark.isNotEmpty) {
+        _amenities.isNotEmpty) {
       if (_tags.length > 5) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('You can add up to 5 search tags only.')),
@@ -92,7 +87,6 @@ class _CompoundFormState extends State<CompoundForm> {
         'tags': _tags,
         'latitude': _latitude,
         'longitude': _longitude,
-        'landmark': _landmark,
         'images': _images,
       });
     } else {
@@ -214,34 +208,6 @@ class _CompoundFormState extends State<CompoundForm> {
             ),
             if (_tags.length > 5)
               Text('Maximum 5 tags allowed.', style: TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
-            // Landmark autocomplete
-            Autocomplete<String>(
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                if (textEditingValue.text == '') {
-                  return const Iterable<String>.empty();
-                }
-                return _landmarkSuggestions.where((String option) {
-                  return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                });
-              },
-              onSelected: (String selection) {
-                setState(() {
-                  _landmark = selection;
-                });
-              },
-              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                controller.text = _landmark;
-                return TextFormField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: const InputDecoration(labelText: 'Landmark'),
-                  validator: (value) => value == null || value.isEmpty ? 'Enter landmark' : null,
-                  onChanged: (value) => _landmark = value,
-                  onEditingComplete: onEditingComplete,
-                );
-              },
-            ),
             const SizedBox(height: 16),
             // Coordinates input
             Text('Coordinates (latitude, longitude):'),
