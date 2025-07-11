@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'base_venue_form.dart';
+import '../dining_space_management_widget.dart';
 
 class DiningEstablishmentForm extends BaseVenueForm {
   const DiningEstablishmentForm({
@@ -37,6 +38,10 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
     'Restaurant',
   ];
 
+  // Dining spaces management
+  List<Map<String, dynamic>> _diningSpaces = [];
+  String _compoundId = '';
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +70,15 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
       
       // Initialize menu image if available
       _menuImageUrl = data['menuImageUrl'];
+
+      // Initialize compound ID and dining spaces
+      if (data['compoundId'] != null) {
+        _compoundId = data['compoundId'];
+      }
+
+      if (data['diningSpaces'] != null && data['diningSpaces'] is List) {
+        _diningSpaces = List<Map<String, dynamic>>.from(data['diningSpaces']);
+      }
     }
   }
 
@@ -94,6 +108,8 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
     formData['venueType'] = 'dining';
     formData['menuItems'] = _menuItems;
     formData['menuImageUrl'] = _menuImageUrl;
+    formData['diningSpaces'] = _diningSpaces;
+    formData['compoundId'] = _compoundId;
     // Note: status field is removed
   }
   
@@ -675,6 +691,20 @@ class _DiningEstablishmentFormState extends BaseVenueFormState<DiningEstablishme
               ),
             ],
           ],
+        ),
+        
+        const SizedBox(height: 24),
+        
+        // Dining Spaces Management Section
+        DiningSpaceManagementWidget(
+          restaurantType: _selectedType,
+          compoundId: _compoundId,
+          existingSpaces: _diningSpaces,
+          onSpacesChanged: (spaces) {
+            setState(() {
+              _diningSpaces = spaces;
+            });
+          },
         ),
       ],
     );

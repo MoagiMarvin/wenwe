@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'base_venue_form.dart';
+import '../room_type_management_widget.dart';
+import '../common/form_fields.dart';
 
 class AccommodationForm extends BaseVenueForm {
   const AccommodationForm({
@@ -15,6 +17,8 @@ class AccommodationForm extends BaseVenueForm {
 class _AccommodationFormState extends BaseVenueFormState<AccommodationForm> {
   String _selectedType = 'Apartment';
   String _selectedDuration = 'Long-term';
+  List<Map<String, dynamic>> _rooms = [];
+  String _compoundId = '';
   
   // Property types based on duration
   final List<String> _longTermPropertyTypes = [
@@ -65,6 +69,14 @@ class _AccommodationFormState extends BaseVenueFormState<AccommodationForm> {
       if (data['type'] != null && _propertyTypes.contains(data['type'])) {
         _selectedType = data['type'];
       }
+
+      if (data['compoundId'] != null) {
+        _compoundId = data['compoundId'];
+      }
+
+      if (data['rooms'] != null && data['rooms'] is List) {
+        _rooms = List<Map<String, dynamic>>.from(data['rooms']);
+      }
     }
   }
 
@@ -97,6 +109,8 @@ class _AccommodationFormState extends BaseVenueFormState<AccommodationForm> {
     formData['type'] = _selectedType;
     formData['duration'] = _selectedDuration;
     formData['venueType'] = 'accommodation';
+    formData['rooms'] = _rooms;
+    formData['compoundId'] = _compoundId;
   }
 
   @override
@@ -190,6 +204,20 @@ class _AccommodationFormState extends BaseVenueFormState<AccommodationForm> {
               ),
             ),
           ],
+        ),
+        
+        const SizedBox(height: 24),
+        
+        // Room Type Management Section
+        RoomTypeManagementWidget(
+          propertyType: _selectedType,
+          compoundId: _compoundId,
+          existingRoomTypes: _rooms,
+          onRoomTypesChanged: (rooms) {
+            setState(() {
+              _rooms = rooms;
+            });
+          },
         ),
       ],
     );

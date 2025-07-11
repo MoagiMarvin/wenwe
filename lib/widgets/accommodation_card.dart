@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/user/accommodation_details_page.dart';
 import 'package:bnb/models/compound.dart';
+import 'forms/compound_property_form.dart';
 
 class AccommodationCard extends StatelessWidget {
   final String title;
@@ -270,4 +271,62 @@ class AccommodationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showAddPropertyDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      String? selectedType;
+      return AlertDialog(
+        title: Text('Add Property'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButton<String>(
+              value: selectedType,
+              hint: Text('Select type'),
+              items: [
+                DropdownMenuItem(value: 'long_stay', child: Text('Long Stay')),
+                DropdownMenuItem(value: 'short_stay', child: Text('Short Stay')),
+                DropdownMenuItem(value: 'restaurant', child: Text('Restaurant')),
+              ],
+              onChanged: (value) {
+                selectedType = value;
+                // setState if using StatefulBuilder
+              },
+            ),
+            // When selectedType is not null, show the corresponding form:
+            if (selectedType == 'long_stay')
+              CompoundPropertyForm(
+                compoundId: 'temp_compound_id', // TODO: Get actual compound ID
+                businessType: 'accommodation',
+                onSubmit: (data) {
+                  // Handle long stay accommodation submission
+                  Navigator.pop(context);
+                },
+              ),
+            if (selectedType == 'short_stay')
+              CompoundPropertyForm(
+                compoundId: 'temp_compound_id', // TODO: Get actual compound ID
+                businessType: 'accommodation',
+                onSubmit: (data) {
+                  // Handle short stay accommodation submission
+                  Navigator.pop(context);
+                },
+              ),
+            if (selectedType == 'restaurant')
+              CompoundPropertyForm(
+                compoundId: 'temp_compound_id', // TODO: Get actual compound ID
+                businessType: 'dining',
+                onSubmit: (data) {
+                  // Handle restaurant submission
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+      );
+    },
+  );
 }
