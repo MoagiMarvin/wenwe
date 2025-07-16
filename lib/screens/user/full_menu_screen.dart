@@ -5,9 +5,9 @@ class FullMenuScreen extends StatelessWidget {
   final String restaurantName;
 
   const FullMenuScreen({
-    Key? key,
+    super.key,
     required this.restaurantName,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

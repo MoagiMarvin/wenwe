@@ -7,7 +7,7 @@ import '../common/location_picker_dialog.dart';
 
 class CompoundForm extends StatefulWidget {
   final void Function(Map<String, dynamic>) onSubmit;
-  const CompoundForm({Key? key, required this.onSubmit}) : super(key: key);
+  const CompoundForm({super.key, required this.onSubmit});
 
   @override
   State<CompoundForm> createState() => _CompoundFormState();
@@ -21,8 +21,8 @@ class _CompoundFormState extends State<CompoundForm> {
   String _province = '';
   String _postalCode = '';
   String _description = '';
-  List<String> _amenities = [];
-  List<String> _tags = [];
+  final List<String> _amenities = [];
+  final List<String> _tags = [];
   double? _latitude;
   double? _longitude;
   List<dynamic> _images = [];

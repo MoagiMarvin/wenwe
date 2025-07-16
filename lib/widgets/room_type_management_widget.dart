@@ -9,12 +9,12 @@ class RoomTypeManagementWidget extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onRoomTypesChanged;
 
   const RoomTypeManagementWidget({
-    Key? key,
+    super.key,
     required this.propertyType,
     required this.compoundId,
     required this.existingRoomTypes,
     required this.onRoomTypesChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<RoomTypeManagementWidget> createState() => _RoomTypeManagementWidgetState();

@@ -5,9 +5,9 @@ class LocationPickerDialog extends StatefulWidget {
   final LatLng initialLocation;
 
   const LocationPickerDialog({
-    Key? key,
+    super.key,
     required this.initialLocation,
-  }) : super(key: key);
+  });
 
   @override
   State<LocationPickerDialog> createState() => _LocationPickerDialogState();
@@ -36,7 +36,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
+      child: SizedBox(
         width: 400,
         height: 500,
         child: Column(

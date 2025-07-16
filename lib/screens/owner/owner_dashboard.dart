@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/compound.dart';
 import '../../widgets/forms/compound_form.dart';
-import '../../widgets/forms/compound_property_form.dart';
+import 'compound_view_screen.dart';
 
 class OwnerDashboard extends StatefulWidget {
-  const OwnerDashboard({Key? key}) : super(key: key);
+  const OwnerDashboard({super.key});
 
   @override
   State<OwnerDashboard> createState() => _OwnerDashboardState();
@@ -12,7 +12,7 @@ class OwnerDashboard extends StatefulWidget {
 
 class _OwnerDashboardState extends State<OwnerDashboard> {
   // Mock data for demo
-  List<Compound> _compounds = [
+  final List<Compound> _compounds = [
     Compound(
       id: '1',
       name: 'Green Acres',
@@ -32,62 +32,30 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     ),
   ];
 
-  List<Map<String, dynamic>> _properties = [
-    {
-      'id': '1',
-      'compoundId': '1',
-      'propertyName': 'Student Bachelors',
-      'type': 'Bachelor',
-      'duration': 'Long-term',
-      'businessType': 'accommodation',
-      'roomTypes': [
-        {
-          'name': 'Standard Bachelor',
-          'quantity': 10,
-          'availableCount': 8,
-          'price': '3000',
-          'size': '25',
-          'description': 'Basic bachelor accommodation for students',
-          'amenities': ['Private Bathroom', 'WiFi', 'Desk'],
-          'images': [],
-        },
-        {
-          'name': 'Premium Bachelor',
-          'quantity': 5,
-          'availableCount': 3,
-          'price': '3500',
-          'size': '30',
-          'description': 'Upgraded bachelor with kitchenette',
-          'amenities': ['Private Bathroom', 'Kitchenette', 'WiFi', 'Desk', 'TV'],
-          'images': [],
-        },
-      ],
-    }
-  ];
+  final List<Map<String, dynamic>> _properties = [];
 
-  // Statistics calculation
+  // Statistics will be calculated from compound properties
+  int get totalCompounds => _compounds.length;
+  
+  int get totalProperties {
+    // This will be updated when properties are added through compound view
+    return _properties.length;
+  }
+
   int get totalRooms {
-    int total = 0;
-    for (var property in _properties) {
-      if (property['roomTypes'] != null) {
-        for (var roomType in property['roomTypes']) {
-          total += int.tryParse(roomType['quantity'].toString()) ?? 0;
-        }
-      }
-    }
-    return total;
+    // This will be calculated from actual room data in compound properties
+    return _properties.fold(0, (sum, property) {
+      final rooms = property['rooms'] as List<dynamic>? ?? [];
+      return sum + rooms.length;
+    });
   }
 
   int get availableRooms {
-    int available = 0;
-    for (var property in _properties) {
-      if (property['roomTypes'] != null) {
-        for (var roomType in property['roomTypes']) {
-          available += int.tryParse(roomType['availableCount'].toString()) ?? 0;
-        }
-      }
-    }
-    return available;
+    // Count available rooms
+    return _properties.fold(0, (sum, property) {
+      final rooms = property['rooms'] as List<dynamic>? ?? [];
+      return sum + rooms.where((room) => room['isAvailable'] == true).length;
+    });
   }
 
   int get occupiedRooms => totalRooms - availableRooms;
@@ -136,78 +104,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     );
   }
 
-  void _showAddPropertyDialog() {
-    if (_compounds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add a compound first!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Business Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.home, color: Color(0xFF4F6CAD)),
-              title: const Text('Accommodation'),
-              subtitle: const Text('Bachelor, Single, Apartment, House'),
-              onTap: () {
-                Navigator.pop(context);
-                _showPropertyForm('accommodation');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.restaurant, color: Color(0xFF4F6CAD)),
-              title: const Text('Dining Establishment'),
-              subtitle: const Text('Restaurant, Cafe, Bar'),
-              onTap: () {
-                Navigator.pop(context);
-                _showPropertyForm('dining');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPropertyForm(String businessType) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: 800,
-          height: 700,
-          child: CompoundPropertyForm(
-            compoundId: _compounds.first.id, // Default to first compound for now
-            businessType: businessType,
-            onSubmit: (propertyData) {
-              setState(() {
-                _properties.add({
-                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                  ...propertyData,
-                });
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${businessType == 'accommodation' ? 'Accommodation' : 'Dining'} property added successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
 
   Compound? _getCompoundForProperty(String compoundId) {
     try {
@@ -256,11 +152,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
             
             const SizedBox(height: 24),
             
-            // Properties Section
-            _buildPropertiesSection(),
-            
-            const SizedBox(height: 24),
-            
             // Quick Actions
             _buildQuickActions(),
           ],
@@ -274,10 +165,28 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
       children: [
         Expanded(
           child: _buildStatCard(
+            'Compounds',
+            totalCompounds.toString(),
+            Icons.location_city,
+            Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
+            'Properties',
+            totalProperties.toString(),
+            Icons.home,
+            Colors.green,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildStatCard(
             'Total Rooms',
             totalRooms.toString(),
             Icons.hotel,
-            Colors.blue,
+            Colors.orange,
           ),
         ),
         const SizedBox(width: 16),
@@ -286,24 +195,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
             'Available',
             availableRooms.toString(),
             Icons.check_circle,
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'Occupied',
-            occupiedRooms.toString(),
-            Icons.person,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'Occupancy',
-            '${occupancyRate.toStringAsFixed(1)}%',
-            Icons.analytics,
             Colors.purple,
           ),
         ),
@@ -406,189 +297,65 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                compound.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3142),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '📍 ${compound.city}, ${compound.province}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '↳ $propertyCount Properties',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF4F6CAD),
-                  fontWeight: FontWeight.w500,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompoundViewScreen(
+                  compound: compound,
+                  onAddProperty: (propertyData) {
+                    setState(() {
+                      _properties.add(propertyData);
+                    });
+                  },
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPropertiesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '🏠 My Properties',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3142),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: _showAddPropertyDialog,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Property'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (_properties.isEmpty)
-          _buildEmptyState(
-            'No properties yet',
-            'Add your first property to start earning income',
-            Icons.home,
-            _showAddPropertyDialog,
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _properties.length,
-            itemBuilder: (context, index) {
-              return _buildPropertyCard(_properties[index]);
-            },
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPropertyCard(Map<String, dynamic> property) {
-    final compound = _getCompoundForProperty(property['compoundId'] ?? '');
-    final roomTypes = property['roomTypes'] as List<dynamic>? ?? [];
-    
-    int totalRooms = 0;
-    int availableRooms = 0;
-    for (var roomType in roomTypes) {
-      totalRooms += int.tryParse(roomType['quantity'].toString()) ?? 0;
-      availableRooms += int.tryParse(roomType['availableCount'].toString()) ?? 0;
-    }
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  property['businessType'] == 'accommodation' ? Icons.home : Icons.restaurant,
-                  color: const Color(0xFF4F6CAD),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        property['propertyName'] ?? 'Unnamed Property',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3142),
-                        ),
-                      ),
-                      Text(
-                        '🏢 ${compound?.name ?? 'Unknown Compound'} • ${property['type']} • ${property['duration'] ?? 'Dining'}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                Text(
+                  compound.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3142),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: availableRooms > 0 ? Colors.green : Colors.red,
-                    borderRadius: BorderRadius.circular(20),
+                const SizedBox(height: 4),
+                Text(
+                  '📍 ${compound.city}, ${compound.province}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
                   ),
-                  child: Text(
-                    '$availableRooms/$totalRooms Available',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '↳ $propertyCount Properties',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF4F6CAD),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            
-            if (roomTypes.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Room Types (${roomTypes.length})',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF2D3142),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: roomTypes.map((roomType) => Chip(
-                  label: Text(
-                    '${roomType['name']} (${roomType['availableCount']}/${roomType['quantity']})',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  backgroundColor: const Color(0xFF4F6CAD).withOpacity(0.1),
-                )).toList(),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildQuickActions() {
     return Column(

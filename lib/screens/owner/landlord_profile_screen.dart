@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 class LandlordProfileScreen extends StatefulWidget {
-  const LandlordProfileScreen({Key? key}) : super(key: key);
+  const LandlordProfileScreen({super.key});
 
   @override
   State<LandlordProfileScreen> createState() => _LandlordProfileScreenState();

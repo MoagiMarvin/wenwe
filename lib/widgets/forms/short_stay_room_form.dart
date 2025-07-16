@@ -4,13 +4,13 @@ import '../common/image_picker_widget.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
-class RoomForm extends StatefulWidget {
+class ShortStayRoomForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
   final Map<String, dynamic>? initialData;
   final String propertyType;
   final String compoundId;
 
-  const RoomForm({
+  const ShortStayRoomForm({
     super.key,
     required this.onSubmit,
     required this.propertyType,
@@ -19,36 +19,57 @@ class RoomForm extends StatefulWidget {
   });
 
   @override
-  State<RoomForm> createState() => _RoomFormState();
+  State<ShortStayRoomForm> createState() => _ShortStayRoomFormState();
 }
 
-class _RoomFormState extends State<RoomForm> {
+class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
+  final TextEditingController roomTypeController = TextEditingController();
+  final TextEditingController nightlyPriceController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController maxGuestsController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController availableController = TextEditingController();
   
   List<dynamic> selectedImages = [];
   final int maxImages = 8;
   
-  // Room-specific amenities
+  // Room type options like booking.com
+  String? selectedRoomType;
+  final List<String> roomTypes = [
+    'Standard Room',
+    'Deluxe Room',
+    'Superior Room',
+    'Executive Room',
+    'Suite',
+    'Junior Suite',
+    'Presidential Suite',
+    'Family Room',
+    'Twin Room',
+    'Single Room',
+  ];
+  
+  // Room-specific amenities for short stay
   final List<Map<String, dynamic>> roomAmenities = [
     {'name': 'Private Bathroom', 'icon': Icons.bathtub, 'selected': false},
     {'name': 'Shared Bathroom', 'icon': Icons.bathtub_outlined, 'selected': false},
-    {'name': 'Kitchenette', 'icon': Icons.kitchen, 'selected': false},
     {'name': 'Air Conditioning', 'icon': Icons.ac_unit, 'selected': false},
     {'name': 'Heating', 'icon': Icons.thermostat, 'selected': false},
     {'name': 'WiFi', 'icon': Icons.wifi, 'selected': false},
-    {'name': 'Desk', 'icon': Icons.desk, 'selected': false},
-    {'name': 'Wardrobe', 'icon': Icons.checkroom, 'selected': false},
-    {'name': 'Balcony', 'icon': Icons.balcony, 'selected': false},
     {'name': 'TV', 'icon': Icons.tv, 'selected': false},
-    {'name': 'Microwave', 'icon': Icons.microwave, 'selected': false},
     {'name': 'Mini Fridge', 'icon': Icons.kitchen, 'selected': false},
+    {'name': 'Coffee Maker', 'icon': Icons.coffee, 'selected': false},
+    {'name': 'Hair Dryer', 'icon': Icons.dry, 'selected': false},
     {'name': 'Safe', 'icon': Icons.security, 'selected': false},
+    {'name': 'Balcony', 'icon': Icons.balcony, 'selected': false},
+    {'name': 'Sea View', 'icon': Icons.waves, 'selected': false},
+    {'name': 'Pool Access', 'icon': Icons.pool, 'selected': false},
+    {'name': 'Gym Access', 'icon': Icons.fitness_center, 'selected': false},
+    {'name': 'Breakfast Included', 'icon': Icons.free_breakfast, 'selected': false},
+    {'name': 'Room Service', 'icon': Icons.room_service, 'selected': false},
+    {'name': 'Parking', 'icon': Icons.local_parking, 'selected': false},
+    {'name': 'Pet Friendly', 'icon': Icons.pets, 'selected': false},
   ];
-  
 
   @override
   void initState() {
@@ -57,8 +78,10 @@ class _RoomFormState extends State<RoomForm> {
     // Initialize form with existing data if available
     if (widget.initialData != null) {
       final data = widget.initialData!;
-      titleController.text = data['title'] ?? '';
-      priceController.text = data['price'] ?? '';
+      selectedRoomType = data['roomType'] ?? roomTypes.first;
+      nightlyPriceController.text = data['nightlyPrice'] ?? '';
+      descriptionController.text = data['description'] ?? '';
+      maxGuestsController.text = data['maxGuests']?.toString() ?? '';
       quantityController.text = data['quantity']?.toString() ?? '';
       availableController.text = data['available']?.toString() ?? '';
       
@@ -75,7 +98,9 @@ class _RoomFormState extends State<RoomForm> {
         }
       }
     } else {
-      // Set default quantity and available
+      // Set default values
+      selectedRoomType = roomTypes.first;
+      maxGuestsController.text = '2';
       quantityController.text = '1';
       availableController.text = '1';
     }
@@ -83,19 +108,30 @@ class _RoomFormState extends State<RoomForm> {
 
   @override
   void dispose() {
-    titleController.dispose();
-    priceController.dispose();
+    roomTypeController.dispose();
+    nightlyPriceController.dispose();
+    descriptionController.dispose();
+    maxGuestsController.dispose();
     quantityController.dispose();
     availableController.dispose();
     super.dispose();
   }
 
-
   void submitForm() {
     if (formKey.currentState!.validate()) {
-      // Validate quantity and available
+      final maxGuests = int.tryParse(maxGuestsController.text) ?? 2;
       final quantity = int.tryParse(quantityController.text) ?? 0;
       final available = int.tryParse(availableController.text) ?? 0;
+      
+      if (maxGuests <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum guests must be greater than 0'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
       
       if (quantity <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -124,15 +160,17 @@ class _RoomFormState extends State<RoomForm> {
           .toList();
       
       final Map<String, dynamic> formData = {
-        'title': titleController.text,
-        'price': priceController.text,
+        'roomType': selectedRoomType,
+        'nightlyPrice': nightlyPriceController.text,
+        'description': descriptionController.text,
+        'maxGuests': maxGuests,
         'quantity': quantity,
         'available': available,
         'amenities': selectedAmenitiesList,
         'images': selectedImages,
         'propertyType': widget.propertyType,
         'compoundId': widget.compoundId,
-        'venueType': 'room',
+        'venueType': 'short_stay_room',
       };
       
       widget.onSubmit(formData);
@@ -150,35 +188,84 @@ class _RoomFormState extends State<RoomForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
-            // Room title/name
-            FormFields.buildTextField(
-              label: 'Room Name',
-              controller: titleController,
-              hint: 'e.g., Standard Bachelor, Premium Single',
+            // Room type dropdown
+            const SizedBox(height: 16),
+            const Text(
+              'Room Type',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: selectedRoomType,
+              decoration: InputDecoration(
+                hintText: 'Select room type',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              items: roomTypes.map((String roomType) {
+                return DropdownMenuItem<String>(
+                  value: roomType,
+                  child: Text(roomType),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedRoomType = newValue;
+                });
+              },
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter a room name';
+                  return 'Please select a room type';
                 }
                 return null;
               },
             ),
             
-            // Price
-            FormFields.buildTextField(
-              label: 'Price (R)',
-              controller: priceController,
-              hint: 'e.g., 3000',
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter the price';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'Please enter a valid price';
-                }
-                return null;
-              },
+            // Nightly price and max guests
+            Row(
+              children: [
+                Expanded(
+                  child: FormFields.buildTextField(
+                    label: 'Nightly Price (R)',
+                    controller: nightlyPriceController,
+                    hint: 'e.g., 500',
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter nightly price';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Please enter a valid price';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FormFields.buildTextField(
+                    label: 'Max Guests',
+                    controller: maxGuestsController,
+                    hint: 'e.g., 2',
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      final guests = int.tryParse(value);
+                      if (guests == null || guests <= 0) {
+                        return 'Must be > 0';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
             ),
             
             // Quantity and Available
@@ -228,6 +315,20 @@ class _RoomFormState extends State<RoomForm> {
               ],
             ),
             
+            // Description
+            FormFields.buildTextField(
+              label: 'Room Type Description',
+              controller: descriptionController,
+              hint: 'Describe this room type and its features for guests',
+              maxLines: 4,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a room type description';
+                }
+                return null;
+              },
+            ),
+            
             // Room amenities
             FormFields.buildCheckboxList(
               label: 'Room Amenities',
@@ -241,14 +342,21 @@ class _RoomFormState extends State<RoomForm> {
               },
             ),
             
-            
             // Image picker
             const SizedBox(height: 16),
             const Text(
-              'Room Images',
+              'Room Type Images',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add high-quality images of this room type to attract more bookings',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
               ),
             ),
             const SizedBox(height: 8),
@@ -283,7 +391,7 @@ class _RoomFormState extends State<RoomForm> {
                   ),
                 ),
                 child: Text(
-                  isEditing ? 'Update Room' : 'Add Room',
+                  isEditing ? 'Update Room Type' : 'Add Room Type',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

@@ -7,10 +7,10 @@ class LocationPickerMap extends StatefulWidget {
   final LatLng? initialLocation;
 
   const LocationPickerMap({
-    Key? key,
+    super.key,
     required this.onLocationSelected,
     this.initialLocation,
-  }) : super(key: key);
+  });
 
   @override
   State<LocationPickerMap> createState() => _LocationPickerMapState();

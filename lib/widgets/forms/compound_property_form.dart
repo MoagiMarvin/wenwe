@@ -8,6 +8,7 @@ class CompoundPropertyForm extends StatefulWidget {
   final Map<String, dynamic>? initialData;
   final String compoundId;
   final String businessType; // 'accommodation' or 'dining'
+  final String? propertyType; // Pre-selected property type
 
   const CompoundPropertyForm({
     super.key,
@@ -15,6 +16,7 @@ class CompoundPropertyForm extends StatefulWidget {
     required this.compoundId,
     required this.businessType,
     this.initialData,
+    this.propertyType,
   });
 
   @override
@@ -74,11 +76,23 @@ class _CompoundPropertyFormState extends State<CompoundPropertyForm> {
   void initState() {
     super.initState();
     
-    if (widget.businessType == 'accommodation') {
+    if (widget.businessType == 'accommodation' || widget.businessType == 'long_stay' || widget.businessType == 'short_stay') {
+      // Map business type to duration
+      if (widget.businessType == 'long_stay') {
+        _selectedDuration = 'Long-term';
+      } else if (widget.businessType == 'short_stay') {
+        _selectedDuration = 'Short-term';
+      }
+      
       // Initialize property types based on selected duration
       _propertyTypes = _selectedDuration == 'Long-term' 
           ? _longTermPropertyTypes 
           : _shortTermPropertyTypes;
+      
+      // Set property type if provided
+      if (widget.propertyType != null && _propertyTypes.contains(widget.propertyType)) {
+        _selectedType = widget.propertyType!;
+      }
       
       // Initialize from existing data if available
       if (widget.initialData != null) {
@@ -101,6 +115,10 @@ class _CompoundPropertyFormState extends State<CompoundPropertyForm> {
       }
     } else {
       // For dining establishments
+      if (widget.propertyType != null && _diningTypes.contains(widget.propertyType)) {
+        _selectedDiningType = widget.propertyType!;
+      }
+      
       if (widget.initialData != null) {
         final data = widget.initialData!;
         
@@ -152,7 +170,7 @@ class _CompoundPropertyFormState extends State<CompoundPropertyForm> {
         'businessType': widget.businessType,
       };
       
-      if (widget.businessType == 'accommodation') {
+      if (widget.businessType == 'accommodation' || widget.businessType == 'long_stay' || widget.businessType == 'short_stay') {
         formData['propertyName'] = propertyNameController.text;
         formData['type'] = _selectedType;
         formData['duration'] = _selectedDuration;
@@ -206,7 +224,7 @@ class _CompoundPropertyFormState extends State<CompoundPropertyForm> {
               const SizedBox(height: 20),
               
               // Property type selection
-              if (widget.businessType == 'accommodation') ...[
+              if (widget.businessType == 'accommodation' || widget.businessType == 'long_stay' || widget.businessType == 'short_stay') ...[
                 // Property name
                 FormFields.buildTextField(
                   label: 'Property Name',

@@ -9,12 +9,12 @@ class DiningSpaceManagementWidget extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onSpacesChanged;
 
   const DiningSpaceManagementWidget({
-    Key? key,
+    super.key,
     required this.restaurantType,
     required this.compoundId,
     required this.existingSpaces,
     required this.onSpacesChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<DiningSpaceManagementWidget> createState() => _DiningSpaceManagementWidgetState();

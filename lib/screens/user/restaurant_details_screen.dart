@@ -6,9 +6,9 @@ class RestaurantDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> restaurantData;
 
   const RestaurantDetailsScreen({
-    Key? key,
+    super.key,
     required this.restaurantData,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
