@@ -150,7 +150,6 @@ class _RoomFormState extends State<RoomForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             // Room title/name
             FormFields.buildTextField(
               label: 'Room Name',

@@ -9,6 +9,7 @@ class ShortStayRoomForm extends StatefulWidget {
   final Map<String, dynamic>? initialData;
   final String propertyType;
   final String compoundId;
+  final bool isHolidayHome;
 
   const ShortStayRoomForm({
     super.key,
@@ -16,6 +17,7 @@ class ShortStayRoomForm extends StatefulWidget {
     required this.propertyType,
     required this.compoundId,
     this.initialData,
+    this.isHolidayHome = false,
   });
 
   @override
@@ -24,7 +26,6 @@ class ShortStayRoomForm extends StatefulWidget {
 
 class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController roomTypeController = TextEditingController();
   final TextEditingController nightlyPriceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController maxGuestsController = TextEditingController();
@@ -34,20 +35,49 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
   List<dynamic> selectedImages = [];
   final int maxImages = 8;
   
-  // Room type options like booking.com
+  // Room type options specific to each property type
   String? selectedRoomType;
-  final List<String> roomTypes = [
-    'Standard Room',
-    'Deluxe Room',
-    'Superior Room',
-    'Executive Room',
-    'Suite',
-    'Junior Suite',
-    'Presidential Suite',
-    'Family Room',
-    'Twin Room',
-    'Single Room',
-  ];
+  
+  List<String> getRoomTypesForProperty(String propertyType) {
+    switch (propertyType.toLowerCase()) {
+      case 'bachelor':
+        return [
+          'Standard Bachelor',
+          'En-suite Bachelor',
+          'Bachelor with Kitchenette',
+        ];
+      case 'lodge':
+        return [
+          'Standard Lodge Room',
+          'Luxury Lodge Room',
+          'Family Lodge Room',
+          'Bush Suite',
+          'Honeymoon Suite',
+        ];
+      case 'guest house':
+        return [
+          'Standard Room',
+          'En-suite Room',
+          'Family Room',
+          'Deluxe Room',
+          'Garden Room',
+        ];
+      case 'flat':
+        return [
+          'Studio Flat',
+          '1-Bedroom Flat',
+          '2-Bedroom Flat',
+          'Penthouse Flat',
+          'Serviced Flat',
+        ];
+      default:
+        return [
+          'Standard Room',
+          'Deluxe Room',
+          'Family Room',
+        ];
+    }
+  }
   
   // Room-specific amenities for short stay
   final List<Map<String, dynamic>> roomAmenities = [
@@ -78,7 +108,10 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
     // Initialize form with existing data if available
     if (widget.initialData != null) {
       final data = widget.initialData!;
-      selectedRoomType = data['roomType'] ?? roomTypes.first;
+      if (!widget.isHolidayHome) {
+        final roomTypes = getRoomTypesForProperty(widget.propertyType);
+        selectedRoomType = data['roomType'] ?? roomTypes.first;
+      }
       nightlyPriceController.text = data['nightlyPrice'] ?? '';
       descriptionController.text = data['description'] ?? '';
       maxGuestsController.text = data['maxGuests']?.toString() ?? '';
@@ -99,8 +132,11 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
       }
     } else {
       // Set default values
-      selectedRoomType = roomTypes.first;
-      maxGuestsController.text = '2';
+      if (!widget.isHolidayHome) {
+        final roomTypes = getRoomTypesForProperty(widget.propertyType);
+        selectedRoomType = roomTypes.first;
+      }
+      maxGuestsController.text = widget.isHolidayHome ? '8' : '2';
       quantityController.text = '1';
       availableController.text = '1';
     }
@@ -108,7 +144,6 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
 
   @override
   void dispose() {
-    roomTypeController.dispose();
     nightlyPriceController.dispose();
     descriptionController.dispose();
     maxGuestsController.dispose();
@@ -160,7 +195,7 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
           .toList();
       
       final Map<String, dynamic> formData = {
-        'roomType': selectedRoomType,
+        'roomType': widget.isHolidayHome ? widget.propertyType : selectedRoomType,
         'nightlyPrice': nightlyPriceController.text,
         'description': descriptionController.text,
         'maxGuests': maxGuests,
@@ -170,7 +205,7 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
         'images': selectedImages,
         'propertyType': widget.propertyType,
         'compoundId': widget.compoundId,
-        'venueType': 'short_stay_room',
+        'venueType': widget.isHolidayHome ? 'holiday_home' : 'short_stay_room',
       };
       
       widget.onSubmit(formData);
@@ -188,52 +223,54 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Room type dropdown
-            const SizedBox(height: 16),
-            const Text(
-              'Room Type',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: selectedRoomType,
-              decoration: InputDecoration(
-                hintText: 'Select room type',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            // Room type dropdown (only for non-holiday homes)
+            if (!widget.isHolidayHome) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Room Type',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              items: roomTypes.map((String roomType) {
-                return DropdownMenuItem<String>(
-                  value: roomType,
-                  child: Text(roomType),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedRoomType = newValue;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please select a room type';
-                }
-                return null;
-              },
-            ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedRoomType,
+                decoration: InputDecoration(
+                  hintText: 'Select room type',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: getRoomTypesForProperty(widget.propertyType).map((String roomType) {
+                  return DropdownMenuItem<String>(
+                    value: roomType,
+                    child: Text(roomType),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedRoomType = newValue;
+                  });
+                },
+                validator: (value) {
+                  if (!widget.isHolidayHome && (value == null || value.isEmpty)) {
+                    return 'Please select a room type';
+                  }
+                  return null;
+                },
+              ),
+            ],
             
             // Nightly price and max guests
             Row(
               children: [
                 Expanded(
                   child: FormFields.buildTextField(
-                    label: 'Nightly Price (R)',
+                    label: widget.isHolidayHome ? 'Property Price per Night (R)' : 'Nightly Price (R)',
                     controller: nightlyPriceController,
-                    hint: 'e.g., 500',
+                    hint: widget.isHolidayHome ? 'e.g., 2000' : 'e.g., 500',
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -249,9 +286,9 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: FormFields.buildTextField(
-                    label: 'Max Guests',
+                    label: widget.isHolidayHome ? 'Total Capacity' : 'Max Guests',
                     controller: maxGuestsController,
-                    hint: 'e.g., 2',
+                    hint: widget.isHolidayHome ? 'e.g., 8' : 'e.g., 2',
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -273,9 +310,9 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
               children: [
                 Expanded(
                   child: FormFields.buildTextField(
-                    label: 'Total Quantity',
+                    label: widget.isHolidayHome ? 'Total Properties' : 'Total Quantity',
                     controller: quantityController,
-                    hint: 'e.g., 10',
+                    hint: widget.isHolidayHome ? 'e.g., 3' : 'e.g., 10',
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -294,7 +331,7 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
                   child: FormFields.buildTextField(
                     label: 'Available',
                     controller: availableController,
-                    hint: 'e.g., 8',
+                    hint: widget.isHolidayHome ? 'e.g., 2' : 'e.g., 8',
                     keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -317,13 +354,13 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
             
             // Description
             FormFields.buildTextField(
-              label: 'Room Type Description',
+              label: widget.isHolidayHome ? 'Property Description' : 'Room Type Description',
               controller: descriptionController,
-              hint: 'Describe this room type and its features for guests',
+              hint: widget.isHolidayHome ? 'Describe this holiday home and its features for guests' : 'Describe this room type and its features for guests',
               maxLines: 4,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter a room type description';
+                  return widget.isHolidayHome ? 'Please enter a property description' : 'Please enter a room type description';
                 }
                 return null;
               },
@@ -331,7 +368,7 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
             
             // Room amenities
             FormFields.buildCheckboxList(
-              label: 'Room Amenities',
+              label: widget.isHolidayHome ? 'Property Amenities' : 'Room Amenities',
               items: roomAmenities,
               onChanged: (newItems) {
                 setState(() {
@@ -344,17 +381,17 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
             
             // Image picker
             const SizedBox(height: 16),
-            const Text(
-              'Room Type Images',
-              style: TextStyle(
+            Text(
+              widget.isHolidayHome ? 'Property Images' : 'Room Type Images',
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Add high-quality images of this room type to attract more bookings',
-              style: TextStyle(
+            Text(
+              widget.isHolidayHome ? 'Add high-quality images of this holiday home to attract more bookings' : 'Add high-quality images of this room type to attract more bookings',
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
               ),
@@ -391,7 +428,9 @@ class _ShortStayRoomFormState extends State<ShortStayRoomForm> {
                   ),
                 ),
                 child: Text(
-                  isEditing ? 'Update Room Type' : 'Add Room Type',
+                  widget.isHolidayHome 
+                    ? (isEditing ? 'Update Holiday Home' : 'Add Holiday Home')
+                    : (isEditing ? 'Update Room Type' : 'Add Room Type'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

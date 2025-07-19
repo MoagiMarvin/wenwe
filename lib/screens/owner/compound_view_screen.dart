@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/compound.dart';
+import '../../models/booking.dart';
 import '../../widgets/forms/compound_property_form.dart';
 import '../../widgets/forms/room_form.dart';
 import '../../widgets/forms/short_stay_room_form.dart';
+import '../../widgets/booking/simple_booking_widget.dart';
+import '../../widgets/booking/booking_confirmation_dialog.dart';
 
 class CompoundViewScreen extends StatefulWidget {
   final Compound compound;
@@ -20,6 +23,7 @@ class CompoundViewScreen extends StatefulWidget {
 
 class _CompoundViewScreenState extends State<CompoundViewScreen> {
   List<Map<String, dynamic>> _properties = [];
+  List<Booking> _bookings = [];
 
   @override
   void initState() {
@@ -82,13 +86,11 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
       ];
     } else if (businessType == 'short_stay') {
       propertyTypes = [
-        {'type': 'Hotel Room', 'description': 'Nightly booking - Standard hotel room'},
-        {'type': 'Guest House', 'description': 'Nightly booking - Private guest house'},
-        {'type': 'Lodge Room', 'description': 'Nightly booking - Lodge accommodation'},
-        {'type': 'Resort Room', 'description': 'Nightly booking - Resort-style room'},
-        {'type': 'Villa', 'description': 'Nightly booking - Luxury villa accommodation'},
-        {'type': 'Apartment', 'description': 'Nightly booking - Short-term apartment'},
-        {'type': 'House', 'description': 'Nightly booking - Vacation house rental'},
+        {'type': 'Bachelor', 'description': 'Budget accommodation - Back rooms for exploring on a budget'},
+        {'type': 'Lodge', 'description': 'Game lodges, mountain lodges, bush accommodation'},
+        {'type': 'Guest House', 'description': 'B&Bs, family-run accommodation, breakfast included'},
+        {'type': 'Flat', 'description': 'Short-term apartment rentals in the city'},
+        {'type': 'Holiday Home', 'description': 'Villas and houses for group/family holidays'},
       ];
     } else if (businessType == 'dining') {
       propertyTypes = [
@@ -111,7 +113,7 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
             subtitle: Text(propertyType['description']),
             onTap: () {
               Navigator.pop(context);
-              _createPropertyFrame(businessType, propertyType['type']);
+              _showPropertyNameDialog(businessType, propertyType['type']);
             },
           )).toList(),
         ),
@@ -119,13 +121,89 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
     );
   }
 
-  void _createPropertyFrame(String businessType, String propertyType) {
+  void _showPropertyNameDialog(String businessType, String propertyType) {
+    final TextEditingController nameController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Enter ${propertyType} Name'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Give your ${propertyType.toLowerCase()} a unique name that guests will recognize.',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: '${propertyType} Name',
+                hintText: _getPropertyNameHint(propertyType),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                Navigator.pop(context);
+                _createPropertyFrame(businessType, propertyType, nameController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F6CAD),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Create Property'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getPropertyNameHint(String propertyType) {
+    switch (propertyType.toLowerCase()) {
+      case 'bachelor':
+        return 'e.g., City Bachelor Rooms, Student Lodge';
+      case 'lodge':
+        return 'e.g., Mountain View Lodge, Safari Lodge';
+      case 'guest house':
+        return 'e.g., Rose Guest House, Sunset B&B';
+      case 'flat':
+        return 'e.g., Downtown Flats, Ocean View Apartments';
+      case 'holiday home':
+        return 'e.g., Seaside Villa, Mountain Retreat';
+      case 'single room':
+        return 'e.g., University Singles, Downtown Rooms';
+      case 'shared room':
+        return 'e.g., Shared Living Space, Community Rooms';
+      case 'apartment':
+        return 'e.g., Rose Apartments, City Living';
+      case 'house':
+        return 'e.g., Family House, Executive Home';
+      default:
+        return 'e.g., Your Property Name';
+    }
+  }
+
+  void _createPropertyFrame(String businessType, String propertyType, String propertyName) {
     final newProperty = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'compoundId': widget.compound.id,
       'businessType': businessType,
       'propertyType': propertyType,
-      'propertyName': '${propertyType} Property',
+      'propertyName': propertyName,
       'rooms': <Map<String, dynamic>>[], // Initialize empty rooms list
     };
     
@@ -138,10 +216,47 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${propertyType} frame created! Click it to add rooms.'),
+        content: Text('$propertyName created! Click it to add rooms.'),
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  IconData _getPropertyIcon(String businessType, String propertyType) {
+    if (businessType == 'dining') {
+      return Icons.restaurant;
+    } else if (businessType == 'short_stay') {
+      switch (propertyType.toLowerCase()) {
+        case 'bachelor':
+          return Icons.single_bed;
+        case 'lodge':
+          return Icons.nature_people;
+        case 'guest house':
+          return Icons.home_work;
+        case 'flat':
+          return Icons.apartment;
+        case 'holiday home':
+          return Icons.villa;
+        default:
+          return Icons.hotel;
+      }
+    } else {
+      // long_stay
+      switch (propertyType.toLowerCase()) {
+        case 'bachelor':
+          return Icons.single_bed;
+        case 'single room':
+          return Icons.bed;
+        case 'shared room':
+          return Icons.group;
+        case 'apartment':
+          return Icons.apartment;
+        case 'house':
+          return Icons.house;
+        default:
+          return Icons.home;
+      }
+    }
   }
 
   void _navigateToPropertyFrame(Map<String, dynamic> property) {
@@ -273,27 +388,29 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
+      elevation: 8,
+      shadowColor: const Color(0xFF4F6CAD).withOpacity(0.3),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: const Color(0xFF4F6CAD).withOpacity(0.3),
-          width: 2,
+          color: const Color(0xFF4F6CAD).withOpacity(0.2),
+          width: 1.5,
         ),
       ),
       child: InkWell(
         onTap: () => _navigateToPropertyFrame(property),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF4F6CAD).withOpacity(0.1),
+                const Color(0xFF4F6CAD).withOpacity(0.05),
                 Colors.white,
+                const Color(0xFF4F6CAD).withOpacity(0.02),
               ],
             ),
           ),
@@ -303,53 +420,85 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4F6CAD),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF4F6CAD),
+                          const Color(0xFF6B7FBD),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4F6CAD).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Icon(
-                      businessType == 'dining' ? Icons.restaurant : Icons.home,
+                      _getPropertyIcon(businessType, propertyType),
                       color: Colors.white,
-                      size: 24,
+                      size: 28,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${propertyType} Frame',
+                          property['propertyName'] ?? '${propertyType} Property',
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF2D3142),
                           ),
                         ),
-                        Text(
-                          businessType.replaceAll('_', ' ').toUpperCase(),
-                          style: TextStyle(
-                            color: const Color(0xFF4F6CAD).withOpacity(0.8),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F6CAD).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            businessType.replaceAll('_', ' ').toUpperCase(),
+                            style: TextStyle(
+                              color: const Color(0xFF4F6CAD),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: rooms.isEmpty ? Colors.orange : Colors.green,
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: rooms.isEmpty 
+                          ? [Colors.orange, Colors.orangeAccent] 
+                          : [Colors.green, Colors.greenAccent],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (rooms.isEmpty ? Colors.orange : Colors.green).withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Text(
                       '${rooms.length} Room${rooms.length != 1 ? 's' : ''}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -360,21 +509,54 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
               
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.grey[50]!,
+                      Colors.white,
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF4F6CAD).withOpacity(0.1),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F6CAD).withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
                     if (rooms.isEmpty) ...[
-                      Icon(
-                        Icons.add_circle_outline,
-                        size: 32,
-                        color: Colors.grey[400],
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F6CAD).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: Icon(
+                          Icons.add_circle_outline,
+                          size: 32,
+                          color: const Color(0xFF4F6CAD),
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Ready to Add Rooms',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFF2D3142),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Text(
                         'Click to add ${propertyType.toLowerCase()} rooms',
                         style: TextStyle(
@@ -384,25 +566,32 @@ class _CompoundViewScreenState extends State<CompoundViewScreen> {
                         ),
                       ),
                     ] else ...[
-                      Icon(
-                        Icons.room,
-                        size: 24,
-                        color: const Color(0xFF4F6CAD),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Rooms: ${rooms.map((r) => r['roomName']).join(', ')}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF2D3142),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(50),
                         ),
-                        textAlign: TextAlign.center,
+                        child: Icon(
+                          Icons.room,
+                          size: 28,
+                          color: Colors.green,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Property Active',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: const Color(0xFF2D3142),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Text(
                         'Click to manage rooms',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: Colors.grey[600],
                           fontStyle: FontStyle.italic,
                         ),
@@ -487,6 +676,7 @@ class PropertyFrameScreen extends StatefulWidget {
 
 class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
   List<Map<String, dynamic>> _rooms = [];
+  List<Booking> _bookings = [];
 
   @override
   void initState() {
@@ -524,6 +714,7 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
             onSubmit: (roomData) {
               final newRoom = {
                 'id': DateTime.now().millisecondsSinceEpoch.toString(),
+                'propertyName': widget.property['propertyName'],
                 'roomName': roomData['title'],
                 'price': roomData['price'],
                 'quantity': roomData['quantity'],
@@ -554,22 +745,27 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
   }
   
   void _showShortStayRoomForm() {
+    final propertyType = widget.property['propertyType'];
+    final isHolidayHome = propertyType == 'Holiday Home';
+    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(
-            title: Text('Add ${widget.property['propertyType']}'),
+            title: Text(isHolidayHome ? 'Add Holiday Home' : 'Add ${propertyType} Room'),
             backgroundColor: const Color(0xFF4F6CAD),
             foregroundColor: Colors.white,
           ),
           body: ShortStayRoomForm(
-            propertyType: widget.property['propertyType'],
+            propertyType: propertyType,
             compoundId: widget.compound.id,
+            isHolidayHome: isHolidayHome,
             onSubmit: (roomData) {
               final newRoom = {
                 'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                'roomName': roomData['roomType'],
+                'propertyName': widget.property['propertyName'],
+                'roomName': isHolidayHome ? propertyType : roomData['roomType'],
                 'price': roomData['nightlyPrice'],
                 'maxGuests': roomData['maxGuests'],
                 'description': roomData['description'],
@@ -578,6 +774,7 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
                 'amenities': roomData['amenities'],
                 'images': roomData['images'],
                 'systemType': 'short_stay',
+                'isHolidayHome': isHolidayHome,
               };
               
               setState(() {
@@ -589,7 +786,7 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
               
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${widget.property['propertyType']} added successfully!'),
+                  content: Text(isHolidayHome ? 'Holiday Home added successfully!' : '${propertyType} room added successfully!'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -726,7 +923,7 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        room['roomName'] ?? 'Unnamed Room',
+                        room['propertyName'] ?? room['roomName'] ?? 'Unnamed Property',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -843,7 +1040,7 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        room['roomName'] ?? 'Unnamed Room Type',
+                        room['propertyName'] ?? 'Unnamed Property',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -942,26 +1139,71 @@ class _PropertyFrameScreenState extends State<PropertyFrameScreen> {
             
             // Add booking button for short stay
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Calendar booking system ready',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _showBookingCalendar(room),
+                icon: const Icon(Icons.calendar_today, size: 16),
+                label: const Text('Book Now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F6CAD),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBookingCalendar(Map<String, dynamic> room) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: SimpleBookingWidget(
+          room: room,
+          existingBookings: _bookings.where((booking) => booking.roomId == room['id']).toList(),
+          onBookingConfirmed: (checkIn, checkOut, guests) {
+            Navigator.of(context).pop();
+            _showBookingConfirmation(room, checkIn, checkOut, guests);
+          },
+          onCancel: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
+  void _showBookingConfirmation(Map<String, dynamic> room, DateTime checkIn, DateTime checkOut, int guests) {
+    final nights = checkOut.difference(checkIn).inDays;
+    final nightlyRate = double.tryParse(room['price']?.toString() ?? '0') ?? 0.0;
+    final totalPrice = nights * nightlyRate;
+
+    showDialog(
+      context: context,
+      builder: (context) => BookingConfirmationDialog(
+        room: room,
+        checkIn: checkIn,
+        checkOut: checkOut,
+        numberOfGuests: guests,
+        totalPrice: totalPrice,
+        onBookingConfirmed: (booking) {
+          setState(() {
+            _bookings.add(booking);
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Booking confirmed for ${booking.guestName}!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
       ),
     );
   }
